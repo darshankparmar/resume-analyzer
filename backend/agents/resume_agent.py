@@ -24,12 +24,12 @@ import os
 try:
     from agno.agent import Agent, RunResponse
     from agno.models.google import Gemini
-    from agno.tools.duckduckgo import DuckDuckGoTools
     from agno.utils.pprint import pprint_run_response
+    from agno.tools.firecrawl import FirecrawlTools
 except Exception as e:  # pragma: no cover
     # Provide helpful message if agno is missing
     raise ImportError(
-        "Required package 'agno' not found. Install with: pip install agno google-genai ddgs"
+        "Required package 'agno' not found. Install with: pip install agno google-genai firecrawl-py"
     ) from e
 
 
@@ -59,8 +59,7 @@ def build_resume_agent() -> Agent:
 
     model = Gemini(id="gemini-1.5-flash")
 
-    # Web search tool for job description link enrichment (DuckDuckGo)
-    web_search = DuckDuckGoTools()
+    web_search = FirecrawlTools(scrape=True, crawl=False)
 
     system_prompt = (
         "You are an expert resume analyst. Analyze the candidate's resume against the job title "
@@ -96,7 +95,7 @@ def craft_prompt(inputs: AgentInputs) -> str:
     if inputs.job_description_text:
         parts.append("Job Description (Provided):\n" + inputs.job_description_text)
     if inputs.job_description_url:
-        parts.append("Job Description URL: " + inputs.job_description_url)
+        parts.append("You can also scrape all content of Job Description from this URL: " + inputs.job_description_url)
 
     parts.append("Candidate Resume (Extracted Text):\n" + inputs.resume_text)
 
