@@ -9,12 +9,10 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 
 app = FastAPI(title="Resume Analyzer Backend", version="1.0.0")
 
-# CORS: allow local frontend (http://localhost:8080)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
+        "https://resume-analyzer-liard-three.vercel.app",
     ],
     allow_credentials=False,
     allow_methods=["POST", "OPTIONS"],
