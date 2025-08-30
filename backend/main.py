@@ -252,5 +252,6 @@ async def analyze_resume(
 
 
 @app.get("/")
+@app.head("/")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
