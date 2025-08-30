@@ -36,12 +36,21 @@ Open <http://localhost:8000/docs> for Swagger UI.
 - PDF signature check is heuristic.
 - Text extraction is implemented (pypdf with optional OCR fallback). If both fail, the API returns TEXT_EXTRACTION_FAILED.
 
-## Agent (Gemini via agno)
+## Agent (Gemini or OpenAI via agno)
 
-Set your Gemini API key as an environment variable:
+Choose provider via environment variable (defaults to Gemini):
 
 ```cmd
-set GOOGLE_API_KEY=your_api_key_here
+REM Choose provider: gemini (default) or openai
+setx AI_PROVIDER=gemini
+
+REM For Gemini
+setx GOOGLE_API_KEY=your_gemini_api_key
+setx GEMINI_MODEL=gemini-1.5-flash
+
+REM For OpenAI (optional)
+setx OPENAI_API_KEY=your_openai_api_key
+setx OPENAI_MODEL=o4-mini
 ```
 
 Example usage in code:

@@ -352,13 +352,16 @@ async def analyze_resume(
     try:
         from agents.resume_agent import AgentInputs, run_resume_analysis
 
-        # If we scraped JD successfully, pass it as text and omit URL to avoid duplicate tool calls
+        # If we scraped JD successfully, pass it as text and omit URL to avoid duplicate JD scraping tool calls
         jd_text_for_agent = scraped_jd or job_description
         jd_url_for_agent = None if scraped_jd else job_link
 
         custom_note = None
         if scraped_jd:
-            custom_note = "Job description was pre-scraped server-side. Do NOT call tools; use the provided JD text."
+            custom_note = (
+                "Job description was pre-scraped server-side. Do NOT scrape the JD URL again; use the provided JD text.\n"
+                "You may consult the provided reference links for resume writing guidance if needed."
+            )
 
         inputs = AgentInputs(
             resume_text=extracted_text,
@@ -492,7 +495,10 @@ async def analyze_resumes_batch(
             jd_url_for_agent = None if batch_scraped_jd else job_link
             custom_note = None
             if batch_scraped_jd:
-                custom_note = "Job description was pre-scraped server-side. Do NOT call tools; use the provided JD text."
+                custom_note = (
+                    "Job description was pre-scraped server-side. Do NOT scrape the JD URL again; use the provided JD text.\n"
+                    "You may consult the provided reference links for resume writing guidance if needed."
+                )
 
             inputs = AgentInputs(
                 resume_text=extracted_text,

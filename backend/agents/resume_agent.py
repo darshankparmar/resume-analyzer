@@ -44,6 +44,13 @@ REPORT_TEMPLATE = (
 
 FALLBACK_ITEM = "- Not enough information."
 
+# Helpful reference links the agent may consult to improve guidance and wording
+REF_LINKS: List[str] = [
+    "https://drive.google.com/file/d/1F6FXFEuX1J_3XRZiGxXvx4uzmoDBRqpD/view",
+    "https://www.themuse.com/advice/185-powerful-verbs-that-will-make-your-resume-awesome",
+    "https://docs.google.com/document/d/e/2PACX-1vQa16NRCkScrUDW9bZGMRDgSVBgigzFFU6j8AI_jrAcRIkmKKyPAq4ZLbKVrWl3S8tTj3XiscHmJvL9/pub",
+]
+
 
 @dataclass
 class AgentInputs:
@@ -55,9 +62,26 @@ class AgentInputs:
 
 
 def build_resume_agent() -> Agent:
-    """Construct a Gemini model agent with web search capability."""
+    """Construct an agent with web search, using provider from env (Gemini or OpenAI)."""
 
-    model = Gemini(id="gemini-1.5-flash", temperature=0.2)
+    provider = (os.getenv("AI_PROVIDER") or os.getenv("MODEL_PROVIDER") or "gemini").strip().lower()
+    model = None
+    if provider == "openai":
+        # Prefer OpenAI reasoning models (e.g., o4-mini). Fallback to standard if unavailable.
+        openai_model_id = os.getenv("OPENAI_MODEL") or "o4-mini"
+        try:
+            # agno >=0.4 likely exposes OpenAI via this path; try common options safely.
+            try:
+                from agno.models.openai import OpenAIChat as OpenAIModel  # type: ignore
+            except Exception:
+                from agno.models.openai import OpenAI as OpenAIModel  # type: ignore
+            model = OpenAIModel(id=openai_model_id, temperature=0.2)
+        except Exception:
+            # If OpenAI path not available, fall back to Gemini to keep service running.
+            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2)
+    else:
+        # Default Gemini
+        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2)
 
     web_search = FirecrawlTools(scrape=True, crawl=False)
 
@@ -88,7 +112,8 @@ def build_resume_agent() -> Agent:
         "- The score line MUST be exactly: '## 📊 Overall Match Score: <number>%'.\n"
         "- Each bullet: one concise sentence (≤ 22 words), action-oriented, no sub-bullets.\n"
         "- Provide 3-7 bullets for Strengths and Improvement areas; 3-5 for Recommendations.\n"
-        "- Do not include code fences, tables, or extra sections.\n\n"
+        "- Do not include code fences or tables.\n"
+        "- Optionally, you MAY add a final '## 🧠 Reasoning Summary' with 2–4 brief bullets explaining key factors behind the score.\n\n"
 
         "Structure to follow:\n"
         "# Resume Analysis Report\n\n"
@@ -101,6 +126,9 @@ def build_resume_agent() -> Agent:
         "- ...\n\n"
         "## 📈 Competency Analysis\n"
         "- Skill/Competency: Assessment & Evidence\n"
+        "\n(Optional)\n"
+        "## 🧠 Reasoning Summary\n"
+        "- ...\n"
     )
 
     agent = Agent(
@@ -140,10 +168,11 @@ def craft_prompt(inputs: AgentInputs) -> str:
 Task:
 - If a Job Description URL is present above, FIRST call the scrape_website tool with that exact URL and use its result as JD context.
 - Analyze the resume against the role using only provided context (and scraped JD when applicable).
+- You MAY consult the reference links (and scrape them) to choose better wording or examples, but do not change facts.
 - Assign an integer score (0-100) per rubric. Be evidence-based, concise, and actionable.
 - Provide clear bullets within the requested counts.
 
-Output strictly as Markdown with the exact headings and order below and nothing else:
+Output strictly as Markdown with the exact headings and order below and nothing else (the final 'Reasoning Summary' is optional):
 
 # Resume Analysis Report
 
@@ -162,6 +191,10 @@ Output strictly as Markdown with the exact headings and order below and nothing 
 - Skill/Competency: Assessment & Evidence
         """.strip()
     )
+
+    # Provide helpful references to consult (agent may scrape these)
+    if REF_LINKS:
+        parts.append("Reference Links (you may scrape if helpful):\n" + "\n".join(f"- {u}" for u in REF_LINKS))
 
     return "\n\n".join(parts)
 
