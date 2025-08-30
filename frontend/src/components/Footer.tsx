@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const Footer: React.FC = () => (
-    <footer className="bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 text-white py-12 px-4 mt-20">
+    <footer className="bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 text-white py-12 px-4">
         <div className="container mx-auto max-w-8xl">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 
@@ -16,7 +16,7 @@ const Footer: React.FC = () => (
                     <p className="text-blue-100 text-lg leading-relaxed">
                         Interested in a specific use case related to this?
                         <br />
-                        Let's discuss how we can help optimize your hiring process.
+                        Let's discuss how I can help optimize your hiring process.
                     </p>
                 </div>
 
@@ -72,7 +72,7 @@ const Footer: React.FC = () => (
             <div className="mt-8 pt-8 border-t border-white/20">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
                     <div className="text-blue-200">
-                        © 2025 Resume Analyzer. Built with ❤️ for job seekers.
+                        © 2025 Resume Analyzer. Built with ❤️
                     </div>
                     {/* <div className="flex items-center gap-6 text-sm text-blue-300">
                         <span>AI-Powered Analysis</span>
