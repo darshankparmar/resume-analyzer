@@ -10,9 +10,10 @@ import type { UploadedFile } from "@/pages/Index";
 interface FileUploadProps {
   onFileUpload: (file: UploadedFile) => void;
   uploadedFile: UploadedFile | null;
+  onRemove?: () => void;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFile }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFile, onRemove }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
@@ -88,6 +89,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
 
   const removeFile = () => {
     setShowPreview(false);
+    // Notify parent to clear the uploaded file
+    onRemove?.();
+    toast({ title: "Removed", description: "Resume cleared. Upload another file.", });
   };
 
   if (uploadedFile) {

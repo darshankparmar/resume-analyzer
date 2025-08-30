@@ -66,6 +66,11 @@ const Index = () => {
     });
   };
 
+  const handleRemoveUploadedFile = () => {
+    setUploadedFile(null);
+    setCurrentStep(1);
+  };
+
   const handleAnalyze = async () => {
     if (!uploadedFile || !jobData.title) {
       toast({
@@ -274,6 +279,7 @@ const Index = () => {
                 <FileUpload
                   onFileUpload={handleFileUpload}
                   uploadedFile={uploadedFile}
+                  onRemove={handleRemoveUploadedFile}
                 />
               </Card>
 
