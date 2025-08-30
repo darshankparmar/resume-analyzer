@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from uuid import uuid4
 from io import BytesIO
 
@@ -13,6 +13,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://resume-analyzer-liard-three.vercel.app",
+        "http://localhost:8080",
     ],
     allow_credentials=False,
     allow_methods=["POST", "OPTIONS"],
@@ -30,6 +31,19 @@ def error_response(code: str, message: str, details: Optional[Dict[str, Any]] = 
         },
     }
     return JSONResponse(content=payload, status_code=status_code)
+
+
+def _error_message_from_response(resp) -> str:
+    """Extract a readable error message from a JSONResponse produced by error_response."""
+    try:
+        if isinstance(resp, JSONResponse):
+            body = resp.body.decode() if isinstance(resp.body, (bytes, bytearray)) else resp.body
+            import json
+            data = json.loads(body)
+            return data.get("error", {}).get("message") or "Validation failed"
+    except Exception:
+        pass
+    return "Validation failed"
 
 
 def is_valid_pdf(mimetype: Optional[str], content: bytes) -> bool:
@@ -175,6 +189,36 @@ def _extract_text_ocr_optional(data: bytes) -> Optional[str]:
         return None
 
 
+def _parse_score_from_markdown(md: Optional[str]) -> Optional[int]:
+    """Extract a 0-100 score from a Markdown report.
+
+    Looks for common patterns like:
+      - Overall Match Score: 85%
+      - Match Score: 72%
+      - 90% match
+    Returns an int between 0 and 100 if found; otherwise None.
+    """
+    if not md:
+        return None
+    import re
+    # Normalize whitespace
+    text = " ".join(md.split())
+    patterns = [
+        r"overall\s+match\s+score\s*[:\-]\s*(\d{1,3})%",
+        r"match\s+score\s*[:\-]\s*(\d{1,3})%",
+        r"(\d{1,3})%\s*(?:overall\s+)?match",
+    ]
+    for p in patterns:
+        m = re.search(p, text, flags=re.IGNORECASE)
+        if m:
+            try:
+                val = int(m.group(1))
+                if 0 <= val <= 100:
+                    return val
+            except Exception:
+                pass
+    return None
+
 @app.post("/api/v1/analyze-resume")
 async def analyze_resume(
     resume: UploadFile = File(...),
@@ -249,6 +293,145 @@ async def analyze_resume(
         "data": {"analysisReport": analysis_report_md},
         "message": "Analysis completed successfully",
     }
+
+
+@app.post("/api/v1/analyze-resumes-batch")
+async def analyze_resumes_batch(
+    resumes: List[UploadFile] = File(..., description="Up to 10 PDF resumes"),
+    job_title_camel: Optional[str] = Form(None, alias="jobTitle"),
+    job_title_snake: Optional[str] = Form(None, alias="job_title"),
+    job_description_camel: Optional[str] = Form(None, alias="jobDescription"),
+    job_description_snake: Optional[str] = Form(None, alias="job_description"),
+    job_link_camel: Optional[str] = Form(None, alias="jobLink"),
+    job_link_snake: Optional[str] = Form(None, alias="job_link"),
+):
+    # Normalize inputs
+    job_title: Optional[str] = job_title_camel or job_title_snake
+    job_description: Optional[str] = job_description_camel or job_description_snake
+    job_link: Optional[str] = job_link_camel or job_link_snake
+
+    # Validate required fields
+    missing = []
+    if not job_title:
+        missing.append("jobTitle")
+    if not resumes or len(resumes) == 0:
+        missing.append("resumes")
+    if missing:
+        return _err_missing_fields(missing)
+
+    # Enforce at least one of job_link or job_description
+    if not (job_link and job_link.strip()) and not (job_description and job_description.strip()):
+        return error_response(
+            code="MISSING_JOB_INFO",
+            message="Either job link or job description is required.",
+            details={"jobLink": job_link, "jobDescription": job_description},
+            status_code=422,
+        )
+
+    # Validate job link if provided
+    err = _validate_job_link(job_link)
+    if err:
+        return err
+
+    # Limit to 10 files
+    if len(resumes) > 10:
+        return error_response(
+            code="TOO_MANY_FILES",
+            message="Maximum 10 resumes allowed per batch.",
+            details={"maxFiles": 10, "received": len(resumes)},
+            status_code=413,
+        )
+
+    results = []
+    for resume in resumes:
+        # Read file contents with size guard
+        contents, err = await _read_resume_file(resume)
+        if err:
+            results.append({
+                "name": resume.filename,
+                "success": False,
+                "error": _error_message_from_response(err),
+            })
+            continue
+
+        # Enforce 2MB size limit for HR batch
+        if len(contents or b"") > 2 * 1024 * 1024:
+            results.append({
+                "name": resume.filename,
+                "success": False,
+                "error": "File size exceeds 2MB limit"
+            })
+            continue
+
+        # Validate PDF
+        err = _validate_pdf_file(contents, resume.content_type)
+        if err:
+            results.append({
+                "name": resume.filename,
+                "success": False,
+                "error": _error_message_from_response(err),
+            })
+            continue
+
+        # Extract text
+        extracted_text = _extract_text_pypdf(contents)
+        if not extracted_text:
+            ocr_text = _extract_text_ocr_optional(contents)
+            if ocr_text:
+                extracted_text = ocr_text
+        if not extracted_text:
+            results.append({
+                "name": resume.filename,
+                "success": False,
+                "error": "Could not extract text from PDF"
+            })
+            continue
+
+        # Run the Gemini agent to generate the Markdown report and score
+        try:
+            from agents.resume_agent import AgentInputs, run_resume_analysis
+
+            inputs = AgentInputs(
+                resume_text=extracted_text,
+                job_title=job_title,
+                job_description_text=job_description,
+                job_description_url=job_link,
+                custom_instructions=None,
+            )
+
+            analysis_report_md = run_resume_analysis(inputs)
+            # Try to compute a score if the function exists
+            score = None
+            try:
+                # Import lazily to avoid hard dependency
+                from agents.resume_agent import run_resume_score  # type: ignore
+                try:
+                    score = run_resume_score(inputs)  # pyright: ignore
+                except Exception:
+                    score = None
+            except Exception:
+                score = None
+
+            if score is None:
+                # Prefer parsing score from the agent's Markdown report if present
+                parsed = _parse_score_from_markdown(analysis_report_md)
+                if parsed is not None:
+                    score = parsed
+
+            results.append({
+                "name": resume.filename,
+                "success": True,
+                "score": score,
+                "report": analysis_report_md,
+            })
+        except Exception as e:
+            results.append({
+                "name": resume.filename,
+                "success": False,
+                "error": f"Analysis failed: {str(e)}"
+            })
+
+    return {"success": True, "results": results, "message": "Batch analysis completed."}
 
 
 @app.get("/")

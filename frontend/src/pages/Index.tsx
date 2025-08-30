@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { FileUpload } from "@/components/FileUpload";
 import { JobInformation } from "@/components/JobInformation";
 import { AnalysisResults } from "@/components/AnalysisResults";
@@ -26,6 +28,8 @@ export interface AnalysisReport {
 }
 
 const Index = () => {
+  const [showHRDialog, setShowHRDialog] = useState(true);
+  const navigate = useNavigate();
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [jobData, setJobData] = useState<JobData>({
     title: "",
@@ -129,6 +133,45 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Dialog open={showHRDialog}>
+        <DialogOverlay
+          style={{
+            background: '#fff',
+            opacity: 1,
+            zIndex: 1000,
+          }}
+          className="fixed inset-0 w-full h-full"
+        />
+        <DialogContent
+          className="text-center bg-white shadow-xl border-none rounded-none max-w-md w-full mx-auto min-h-[260px] flex flex-col justify-center items-center"
+          style={{
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1001,
+          }}
+        >
+          <h2 className="text-2xl font-bold mb-2">Are you HR?</h2>
+          <p className="mb-6">If you are an HR user, you can access the batch analysis portal.</p>
+          <div className="flex justify-center gap-4">
+            <button
+              className="px-6 py-2 rounded bg-primary text-white hover:bg-primary/90 text-lg font-medium"
+              onClick={() => {
+                setShowHRDialog(false);
+                navigate("/hr");
+              }}
+            >
+              Yes
+            </button>
+            <button
+              className="px-6 py-2 rounded bg-muted text-foreground border hover:bg-muted/80 text-lg font-medium"
+              onClick={() => setShowHRDialog(false)}
+            >
+              No
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">

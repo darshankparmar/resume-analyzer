@@ -1,18 +1,33 @@
 import React from "react";
 
 const Footer: React.FC = () => (
-    <footer className="w-full bg-gray-100 text-gray-700 py-6 px-4 mt-8 border-t flex flex-col items-center text-center gap-2 sm:flex-row sm:justify-between sm:items-center sm:text-left">
-        <div className="flex flex-col items-center sm:items-start">
-            <span className="font-medium">Interested in a specific use case related to this? </span>
-        </div>
-        <div className="flex flex-col items-center gap-1 sm:items-end">
-            <div className="flex items-center gap-2">
-                <span role="img" aria-label="phone">📞</span>
-                <a href="tel:+918469108864" className="hover:underline">+91 84691 08864</a>
-            </div>
-            <div className="flex items-center gap-2">
-                <span role="img" aria-label="email">✉️</span>
-                <a href="mailto:darshanparmar.dev@gmail.com" className="hover:underline">darshanparmar.dev@gmail.com</a>
+    <footer className="bg-white/50 backdrop-blur-xl border-t border-gray-200/50 mt-12">
+        <div className="container mx-auto px-4 py-8">
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                <div className="text-center sm:text-left">
+                    <p className="font-medium text-gray-900 mb-1">
+                        Need a custom solution?
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        Get in touch for enterprise features and API access
+                    </p>
+                </div>
+                <div className="flex flex-col items-center gap-2 sm:items-end">
+                    <a
+                        href="tel:+918469108864"
+                        className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                        <span className="text-lg">📞</span>
+                        <span className="font-medium">+91 84691 08864</span>
+                    </a>
+                    <a
+                        href="mailto:darshanparmar.dev@gmail.com"
+                        className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                        <span className="text-lg">✉️</span>
+                        <span className="font-medium">darshanparmar.dev@gmail.com</span>
+                    </a>
+                </div>
             </div>
         </div>
     </footer>
