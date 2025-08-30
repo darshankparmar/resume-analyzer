@@ -608,7 +608,7 @@ const HRBatchPage: React.FC = () => {
                                                     )}
 
                                                     <div className="flex items-center gap-2">
-                                                        <Button
+                                                        {/* <Button
                                                             size="sm"
                                                             variant="ghost"
                                                             onClick={() => viewResume(f.file)}
@@ -616,7 +616,7 @@ const HRBatchPage: React.FC = () => {
                                                         >
                                                             <Eye className="h-4 w-4 sm:mr-1" />
                                                             <span className="hidden sm:inline">View</span>
-                                                        </Button>
+                                                        </Button> */}
 
                                                         {r?.report && r.success && (
                                                             <>
