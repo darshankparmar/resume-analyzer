@@ -78,59 +78,59 @@ def build_resume_agent() -> Agent:
             model = OpenAIModel(id=openai_model_id, temperature=0.2)
         except Exception:
             # If OpenAI path not available, fall back to Gemini to keep service running.
-            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2)
+            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
     else:
         # Default Gemini
-        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2)
+        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
 
     web_search = FirecrawlTools(scrape=True, crawl=False)
 
     system_prompt = (
-        "You are an expert resume analyst. Analyze the candidate's resume against the job title "
-        "and job description (from provided text and/or link). Your goal is to produce a concise, "
-        "actionable, and strictly formatted Markdown report that our system can reliably parse.\n\n"
+        "You are an AI Resume Analyst. "
+        "Analyze the provided resume text against the provided job title and job description (JD) "
+        "and generate a structured Markdown report that recruiters can read and act on.\n\n"
 
-    "Quality and grounding:\n"
-    "- Use ONLY the provided resume text and job description (text or scraped from the given URL).\n"
-    "- When a Job Description URL is provided, you MUST first call the scrape_website tool with that exact URL,\n"
-    "  wait for the tool result, and use the returned content as the primary JD context before writing the report.\n"
-    "- If there is no JD URL and the JD text is weak (< 200 chars), do not call tools; proceed using the provided text only.\n"
-        "- Do not invent skills or experiences that are not supported by the resume.\n"
-        "- If JD is missing or very weak, make reasonable assumptions and label them explicitly as assumptions.\n"
-        "- Keep tone professional, supportive, and specific. No marketing fluff.\n\n"
+        "Data rules:\n"
+        "- Use ONLY the provided resume text and JD (or scraped JD content if a URL is given).\n"
+        "- If a JD URL is provided, first call the scrape_website tool with that exact URL and wait for its result; "
+        "use the returned content as the JD context.\n"
+        "- Do NOT invent skills, companies, dates, or experiences not present in the resume.\n"
+        "- If JD is missing or very short (<200 chars), proceed but add an 'Assumptions' section describing what you assumed.\n"
+        "- Avoid bias: do NOT consider gender, age, ethnicity, name, or photos when scoring or recommending.\n\n"
 
-        "Scoring rubric (0-100, integer, no decimals):\n"
-        "- 90-100: Exceptional alignment with most key requirements; strong direct evidence in resume.\n"
-        "- 75-89: Good alignment; several strong matches, some gaps.\n"
-        "- 60-74: Partial alignment; multiple gaps or limited evidence.\n"
-        "- 40-59: Weak alignment; few relevant skills/experience.\n"
-        "- 0-39: Very poor alignment.\n"
-        "Base the score on role requirements vs. resume evidence. Round to a whole number.\n\n"
+        "Scoring rules:\n"
+        "- Provide an integer Overall Match Score 0–100 (no decimals) and a Confidence level (Low/Medium/High).\n"
+        "- Follow this rubric: 90–100 Excellent; 75–89 Good; 60–74 Partial; 40–59 Weak; 0–39 Very poor.\n"
+        "- Base the score on concrete evidence in the resume vs. role requirements. When using subjective judgement, state it.\n\n"
 
-        "Output format requirements (strict):\n"
-        "- Output ONLY Markdown with the following exact section headings and order.\n"
-        "- The score line MUST be exactly: '## 📊 Overall Match Score: <number>%'.\n"
-        "- Each bullet: one concise sentence (≤ 22 words), action-oriented, no sub-bullets.\n"
-        "- Provide 3-7 bullets for Strengths and Improvement areas; 3-5 for Recommendations.\n"
-        "- Do not include code fences or tables.\n"
-        "- Optionally, you MAY add a final '## 🧠 Reasoning Summary' with 2–4 brief bullets explaining key factors behind the score.\n\n"
-
-        "Structure to follow:\n"
+        "Output format (strict Markdown, no code fences, no tables):\n"
         "# Resume Analysis Report\n\n"
-        "## 📊 Overall Match Score: <number>%\n\n"
-        "## ✅ Strengths\n"
-        "- ...\n\n"
+        "## 📊 Overall Match Score: <number>%  \n"
+        "Confidence: <Low|Medium|High>\n\n"
+        "## ✅ Strengths (Matched with JD)\n"
+        "- [Short evidence snippet] Bullet (≤22 words)\n"
+        "- [snippet] Bullet\n"
+        "- 3–7 bullets total\n\n"
         "## 🔧 Areas for Improvement\n"
-        "- ...\n\n"
+        "- [snippet] Bullet (≤22 words)\n"
+        "- 3–7 bullets total\n\n"
         "## 🎯 Recommendations\n"
-        "- ...\n\n"
+        "- 3–5 concise, actionable bullets (≤22 words each)\n\n"
         "## 📈 Competency Analysis\n"
-        "- Skill/Competency: Assessment & Evidence\n"
-        "\n(Optional)\n"
-        "## 🧠 Reasoning Summary\n"
-        "- ...\n"
-    )
+        "- Skill: Short assessment (evidence snippet)\n"
+        "- 3–6 bullets total\n\n"
+        "## ⚠️ Red Flags (if any)\n"
+        "- One-line bullets with evidence (e.g., long employment gap: 2019–2022)\n\n"
+        "## 🧠 Assumptions (if JD weak or missing)\n"
+        "- 1–3 bullets explaining any assumptions made\n\n"
 
+        "Formatting constraints:\n"
+        "- Use the exact section headings and order shown above.\n"
+        "- Include one short evidence snippet in square brackets at the start of each bullet (1–6 words taken from the resume).\n"
+        "- Each bullet ≤22 words. No sub-bullets, no tables, no code blocks.\n"
+        "- If any rule cannot be followed (e.g., evidence not present), state that explicitly in the 'Assumptions' section.\n"
+    )
+    
     agent = Agent(
         model=model,
         tools=[web_search],
@@ -143,57 +143,78 @@ def build_resume_agent() -> Agent:
 
 
 def craft_prompt(inputs: AgentInputs) -> str:
+    """
+    Build the user/prompt string sent to the model for each analysis call.
+    This prompt must be used together with a strict system prompt (the agent's system message)
+    and model settings: temperature 0.0-0.2, max_tokens ~900-1200.
+    """
     parts: List[str] = []
-    if inputs.custom_instructions:
-        parts.append(f"Additional Instructions:\n{inputs.custom_instructions}\n")
 
-    parts.append(f"Job Title: {inputs.job_title}")
+    # Optional extra instructions supplied at runtime (kept first)
+    if inputs.custom_instructions:
+        parts.append(f"Additional Instructions:\n{inputs.custom_instructions.strip()}\n")
+
+    # Job info
+    parts.append(f"Job Title: {inputs.job_title.strip() if inputs.job_title else ''}")
 
     if inputs.job_description_text:
-        parts.append("Job Description (Provided):\n" + inputs.job_description_text)
+        parts.append("Job Description (Provided):\n" + inputs.job_description_text.strip())
     if inputs.job_description_url:
-        parts.append("Job Description URL (MUST scrape before writing the report):\n" + inputs.job_description_url)
+        parts.append("Job Description URL (MUST scrape before writing the report):\n" + inputs.job_description_url.strip())
 
-    # If JD text is missing or short, enforce scraping when URL is present
-    if not inputs.job_description_text or len(inputs.job_description_text) < 200:
+    # Enforce scraping behavior / assumptions guidance
+    if not inputs.job_description_text or len(inputs.job_description_text.strip()) < 200:
         if inputs.job_description_url:
-            parts.append("Note: A JD URL is provided; you MUST call scrape_website with that URL first, then synthesize the report.")
+            parts.append(
+                "NOTE: A JD URL is provided. You MUST first call the scrape_website tool with that exact URL, "
+                "wait for the tool result, and use the returned content as the primary JD context before composing the report."
+            )
         else:
-            parts.append("Note: JD text is missing or short and no URL provided; proceed with available text and explicitly label assumptions.")
+            parts.append(
+                "NOTE: JD text is missing or very short and no URL is provided. Proceed with available text, "
+                "but you MUST include an 'Assumptions' section that clearly lists any assumptions made."
+            )
 
-    parts.append("Candidate Resume (Extracted Text):\n" + inputs.resume_text)
+    # Candidate resume
+    parts.append("Candidate Resume (Extracted Text):\n" + inputs.resume_text.strip())
 
+    # The core task and strict output rules (updated)
     parts.append(
-        """
-Task:
-- If a Job Description URL is present above, FIRST call the scrape_website tool with that exact URL and use its result as JD context.
-- Analyze the resume against the role using only provided context (and scraped JD when applicable).
-- You MAY consult the reference links (and scrape them) to choose better wording or examples, but do not change facts.
-- Assign an integer score (0-100) per rubric. Be evidence-based, concise, and actionable.
-- Provide clear bullets within the requested counts.
-
-Output strictly as Markdown with the exact headings and order below and nothing else (the final 'Reasoning Summary' is optional):
-
-# Resume Analysis Report
-
-## 📊 Overall Match Score: <number>%
-
-## ✅ Strengths
-- ...
-
-## 🔧 Areas for Improvement
-- ...
-
-## 🎯 Recommendations
-- ...
-
-## 📈 Competency Analysis
-- Skill/Competency: Assessment & Evidence
-        """.strip()
+        (
+            "Task:\n"
+            "- If a Job Description URL is present above, FIRST call the scrape_website tool with that exact URL and use its result as JD context.\n"
+            "- Analyze the resume against the role using ONLY the provided context (resume text + provided JD text or scraped JD when applicable).\n"
+            "- Do NOT invent skills, companies, dates, or experiences not present in the resume. If evidence is missing, state this in 'Assumptions'.\n"
+            "- Be evidence-based: for every Strength/Gap/Competency bullet include a 1–6 word evidence snippet taken from the resume in square brackets at the start of the bullet.\n"
+            "- Assign an integer Overall Match Score (0–100) per rubric and include a Confidence (Low|Medium|High).\n"
+            "- Follow the exact Markdown headings, order, and formatting rules below. Output ONLY Markdown (no code fences, no tables, no sub-bullets).\n\n"
+            "Strict output format (use exactly these headings and order):\n\n"
+            "# Resume Analysis Report\n\n"
+            "## 📊 Overall Match Score: <number>%  \n"
+            "Confidence: <Low|Medium|High>\n\n"
+            "## ✅ Strengths (Matched with JD)\n"
+            "- [evidence snippet] One concise bullet ≤22 words (3–7 bullets total)\n\n"
+            "## 🔧 Areas for Improvement\n"
+            "- [evidence snippet] One concise bullet ≤22 words (3–7 bullets total)\n\n"
+            "## 🎯 Recommendations\n"
+            "- One concise, actionable bullet ≤22 words (3–5 bullets total)\n\n"
+            "## 📈 Competency Analysis\n"
+            "- Skill/Competency: Short assessment (evidence snippet). Provide 3–6 bullets.\n\n"
+            "## ⚠️ Red Flags (if any)\n"
+            "- One-line bullets with direct evidence (e.g., 'Employment gap 2019–2021') or 'None' if not present.\n\n"
+            "## 🧠 Assumptions (if JD weak or missing)\n"
+            "- 1–3 bullets describing any assumption(s) used while scoring.\n\n"
+            "Formatting constraints:\n"
+            "- Each bullet MUST start with a square-bracket evidence snippet of 1–6 words taken from the resume (e.g., '[Python 6 yrs]').\n"
+            "- Each bullet MUST be ≤22 words. No sub-bullets, no tables, no code blocks.\n"
+            "- Strengths and Areas for Improvement must each contain 3–7 bullets. Recommendations 3–5 bullets. Competency Analysis 3–6 bullets.\n"
+            "- If any rule cannot be followed, explicitly state why in the 'Assumptions' section.\n\n"
+            "When composing text, keep tone professional, concise, and HR-friendly. Do NOT consider gender, age, ethnicity, name, or photos when scoring or recommending.\n"
+        )
     )
 
-    # Provide helpful references to consult (agent may scrape these)
-    if REF_LINKS:
+    # Helpful references (optional external links to consult/scrape)
+    if globals().get("REF_LINKS"):
         parts.append("Reference Links (you may scrape if helpful):\n" + "\n".join(f"- {u}" for u in REF_LINKS))
 
     return "\n\n".join(parts)
