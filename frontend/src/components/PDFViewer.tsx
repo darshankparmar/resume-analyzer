@@ -147,34 +147,43 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, className }) => {
   }
 
   const ControlBar = () => (
-    <div className={cn(
-      "flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm border-b border-gray-200/50 transition-all duration-300",
-      isFullscreen && "absolute top-0 left-0 right-0 z-10",
-      !isControlsVisible && isFullscreen && "opacity-0 pointer-events-none"
-    )}>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-          <FileText className="h-5 w-5 text-white" />
+    <div
+      className={cn(
+        "p-3 sm:p-4 bg-white/95 backdrop-blur-sm border-b border-gray-200/50 transition-all duration-300",
+        "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3",
+        isFullscreen && "absolute top-0 left-0 right-0 z-10",
+        !isControlsVisible && isFullscreen && "opacity-0 pointer-events-none"
+      )}
+    >
+      {/* Left: File + Page info */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
         </div>
-        <div>
-          <span className="font-semibold text-gray-900">
-            {loading ? "Loading..." : `Page ${pageNumber} of ${numPages}`}
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-semibold text-gray-900 truncate">
+            {loading ? "Loading…" : `Page ${pageNumber}`}
           </span>
-          <div className="text-xs text-gray-500">
-            {Math.round(scale * 100)}% zoom
-          </div>
+          {!loading && (
+            <>
+              <span className="text-xs text-gray-500">/ {numPages}</span>
+              <span className="hidden sm:inline text-xs text-gray-400">• {Math.round(scale * 100)}%</span>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      {/* Right: Controls */}
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Navigation */}
-        <div className="flex items-center gap-1 mr-2">
+        <div className="flex items-center gap-1 mr-1 sm:mr-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={goToPrevious}
             disabled={pageNumber <= 1 || loading}
-            className="rounded-lg hover:bg-blue-50"
+            className="rounded-lg hover:bg-blue-50 h-8 w-8 p-0"
+            aria-label="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -183,20 +192,22 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, className }) => {
             size="sm"
             onClick={goToNext}
             disabled={pageNumber >= numPages || loading}
-            className="rounded-lg hover:bg-blue-50"
+            className="rounded-lg hover:bg-blue-50 h-8 w-8 p-0"
+            aria-label="Next page"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-1 mr-2">
+        <div className="flex items-center gap-1 mr-1 sm:mr-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={zoomOut}
             disabled={scale <= 0.3 || loading}
-            className="rounded-lg hover:bg-blue-50"
+            className="rounded-lg hover:bg-blue-50 h-8 w-8 p-0"
+            aria-label="Zoom out"
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
@@ -205,28 +216,32 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, className }) => {
             size="sm"
             onClick={zoomIn}
             disabled={scale >= 2.5 || loading}
-            className="rounded-lg hover:bg-blue-50"
+            className="rounded-lg hover:bg-blue-50 h-8 w-8 p-0"
+            aria-label="Zoom in"
           >
             <ZoomIn className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Additional Controls */}
+        {/* Rotate (hide on very small if space tight) */}
         <Button
           variant="ghost"
           size="sm"
           onClick={rotate}
           disabled={loading}
-          className="rounded-lg hover:bg-blue-50"
+          className="rounded-lg hover:bg-blue-50 h-8 w-8 p-0 hidden xs:inline-flex sm:inline-flex"
+          aria-label="Rotate"
         >
           <RotateCw className="h-4 w-4" />
         </Button>
 
+        {/* Fullscreen */}
         <Button
           variant="ghost"
           size="sm"
           onClick={toggleFullscreen}
-          className="rounded-lg hover:bg-blue-50"
+          className="rounded-lg hover:bg-blue-50 h-8 w-8 p-0"
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </Button>
@@ -236,7 +251,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, className }) => {
             variant="ghost"
             size="sm"
             onClick={() => setIsFullscreen(false)}
-            className="rounded-lg hover:bg-red-50 text-red-600 ml-2"
+            className="rounded-lg hover:bg-red-50 text-red-600 h-8 w-8 p-0 ml-1"
+            aria-label="Close preview"
           >
             <X className="h-4 w-4" />
           </Button>

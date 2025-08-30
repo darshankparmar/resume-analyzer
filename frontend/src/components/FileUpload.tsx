@@ -108,14 +108,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
               <p className="text-sm text-green-700">{uploadedFile.size} • PDF</p>
             </div>
             <div className="flex gap-2">
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowPreview(!showPreview)}
                 className="text-green-700 hover:bg-green-100 rounded-lg"
               >
                 <Eye className="h-4 w-4" />
-              </Button>
+              </Button> */}
               <Button
                 variant="ghost"
                 size="sm"

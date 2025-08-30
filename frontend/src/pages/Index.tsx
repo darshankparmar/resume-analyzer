@@ -29,7 +29,6 @@ export interface AnalysisReport {
 
 const Index = () => {
   const [showHRDialog, setShowHRDialog] = useState(true);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [jobData, setJobData] = useState<JobData>({
@@ -217,16 +216,6 @@ const Index = () => {
                 </p>
               </div>
             </div>
-
-            {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-            >
-              {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
           </div>
         </div>
       </header>
@@ -313,22 +302,6 @@ const Index = () => {
           )}
         </div>
       </div>
-
-      {/* Mobile Menu Overlay */}
-      {showMobileMenu && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowMobileMenu(false)} />
-          <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold">Menu</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowMobileMenu(false)}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            {/* Add mobile menu content here if needed */}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
