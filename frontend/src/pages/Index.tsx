@@ -175,10 +175,10 @@ const Index = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Are you HR?</h2>
               <p className="text-gray-600">Access our batch analysis portal for processing multiple resumes</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row w-full">
               <Button
                 size="lg"
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 rounded-xl font-semibold"
+                className="w-full sm:flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 rounded-xl font-semibold"
                 onClick={() => {
                   setShowHRDialog(false);
                   navigate("/hr");
@@ -189,7 +189,7 @@ const Index = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="flex-1 border-2 border-gray-200 hover:bg-gray-50 rounded-xl font-semibold"
+                className="w-full sm:flex-1 border-2 border-gray-200 hover:bg-gray-50 rounded-xl font-semibold"
                 onClick={() => setShowHRDialog(false)}
               >
                 Individual User
