@@ -410,7 +410,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       </div>
 
       {/* Stats Card */}
-      <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200/50 rounded-2xl">
+      {/* <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200/50 rounded-2xl">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-purple-900">{report.content.split(' ').length}</div>
@@ -427,7 +427,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             <div className="text-sm text-purple-700">Recommendations</div>
           </div>
         </div>
-      </Card>
+      </Card> */}
     </div>
   );
 };

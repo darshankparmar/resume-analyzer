@@ -57,16 +57,50 @@ class AgentInputs:
 def build_resume_agent() -> Agent:
     """Construct a Gemini model agent with web search capability."""
 
-    model = Gemini(id="gemini-1.5-flash")
+    model = Gemini(id="gemini-1.5-flash", temperature=0.2)
 
     web_search = FirecrawlTools(scrape=True, crawl=False)
 
     system_prompt = (
         "You are an expert resume analyst. Analyze the candidate's resume against the job title "
-        "and job description (from provided text and/or link). Output a concise, professional "
-        "Markdown report. Avoid hallucinations; cite only from input resume/JD context. "
-        "When the JD is weak or missing, make reasonable assumptions and clearly label them. "
-        "Aim for actionable recommendations. Keep the tone supportive and specific."
+        "and job description (from provided text and/or link). Your goal is to produce a concise, "
+        "actionable, and strictly formatted Markdown report that our system can reliably parse.\n\n"
+
+    "Quality and grounding:\n"
+    "- Use ONLY the provided resume text and job description (text or scraped from the given URL).\n"
+    "- When a Job Description URL is provided, you MUST first call the scrape_website tool with that exact URL,\n"
+    "  wait for the tool result, and use the returned content as the primary JD context before writing the report.\n"
+    "- If there is no JD URL and the JD text is weak (< 200 chars), do not call tools; proceed using the provided text only.\n"
+        "- Do not invent skills or experiences that are not supported by the resume.\n"
+        "- If JD is missing or very weak, make reasonable assumptions and label them explicitly as assumptions.\n"
+        "- Keep tone professional, supportive, and specific. No marketing fluff.\n\n"
+
+        "Scoring rubric (0-100, integer, no decimals):\n"
+        "- 90-100: Exceptional alignment with most key requirements; strong direct evidence in resume.\n"
+        "- 75-89: Good alignment; several strong matches, some gaps.\n"
+        "- 60-74: Partial alignment; multiple gaps or limited evidence.\n"
+        "- 40-59: Weak alignment; few relevant skills/experience.\n"
+        "- 0-39: Very poor alignment.\n"
+        "Base the score on role requirements vs. resume evidence. Round to a whole number.\n\n"
+
+        "Output format requirements (strict):\n"
+        "- Output ONLY Markdown with the following exact section headings and order.\n"
+        "- The score line MUST be exactly: '## 📊 Overall Match Score: <number>%'.\n"
+        "- Each bullet: one concise sentence (≤ 22 words), action-oriented, no sub-bullets.\n"
+        "- Provide 3-7 bullets for Strengths and Improvement areas; 3-5 for Recommendations.\n"
+        "- Do not include code fences, tables, or extra sections.\n\n"
+
+        "Structure to follow:\n"
+        "# Resume Analysis Report\n\n"
+        "## 📊 Overall Match Score: <number>%\n\n"
+        "## ✅ Strengths\n"
+        "- ...\n\n"
+        "## 🔧 Areas for Improvement\n"
+        "- ...\n\n"
+        "## 🎯 Recommendations\n"
+        "- ...\n\n"
+        "## 📈 Competency Analysis\n"
+        "- Skill/Competency: Assessment & Evidence\n"
     )
 
     agent = Agent(
@@ -74,15 +108,10 @@ def build_resume_agent() -> Agent:
         tools=[web_search],
         instructions=system_prompt,
         markdown=True,
-        debug_mode=True
+        debug_mode=False,
+        show_tool_calls=False
     )
     return agent
-
-
-def _format_sections(items: List[str]) -> str:
-    if not items:
-        return "- No notable points identified."
-    return "\n".join(f"- {i}" for i in items)
 
 
 def craft_prompt(inputs: AgentInputs) -> str:
@@ -95,24 +124,30 @@ def craft_prompt(inputs: AgentInputs) -> str:
     if inputs.job_description_text:
         parts.append("Job Description (Provided):\n" + inputs.job_description_text)
     if inputs.job_description_url:
-        parts.append("You can also scrape all content of Job Description from this URL: " + inputs.job_description_url)
+        parts.append("Job Description URL (MUST scrape before writing the report):\n" + inputs.job_description_url)
+
+    # If JD text is missing or short, enforce scraping when URL is present
+    if not inputs.job_description_text or len(inputs.job_description_text) < 200:
+        if inputs.job_description_url:
+            parts.append("Note: A JD URL is provided; you MUST call scrape_website with that URL first, then synthesize the report.")
+        else:
+            parts.append("Note: JD text is missing or short and no URL provided; proceed with available text and explicitly label assumptions.")
 
     parts.append("Candidate Resume (Extracted Text):\n" + inputs.resume_text)
 
     parts.append(
         """
 Task:
-1) Assess overall match score (0-100) between the resume and the role.
-2) List 3-7 specific strengths.
-3) List 3-7 actionable improvement areas.
-4) Provide 3-5 concise recommendations tailored to the role.
-5) Provide a competency analysis mapping core skills to role requirements.
+- If a Job Description URL is present above, FIRST call the scrape_website tool with that exact URL and use its result as JD context.
+- Analyze the resume against the role using only provided context (and scraped JD when applicable).
+- Assign an integer score (0-100) per rubric. Be evidence-based, concise, and actionable.
+- Provide clear bullets within the requested counts.
 
-Output strictly as Markdown following this structure and nothing else:
+Output strictly as Markdown with the exact headings and order below and nothing else:
 
 # Resume Analysis Report
 
-## 📊 Overall Match Score: <percent>%
+## 📊 Overall Match Score: <number>%
 
 ## ✅ Strengths
 - ...
@@ -140,7 +175,7 @@ def run_resume_analysis(
 
     prompt = craft_prompt(inputs)
 
-    # If a JD URL is provided, allow the agent's DuckDuckGo search tool to fetch context.
+    # If a JD URL is provided, Firecrawl can be used to fetch context.
     # The agno framework will decide if/when to call tools based on the prompt.
     result: RunResponse = agent.run(prompt)
     

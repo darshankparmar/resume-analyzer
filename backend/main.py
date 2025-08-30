@@ -4,6 +4,9 @@ from fastapi.responses import JSONResponse
 from typing import Optional, Dict, Any, List
 from uuid import uuid4
 from io import BytesIO
+import re
+import os
+from urllib.parse import urlparse
 
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 
@@ -57,8 +60,6 @@ def is_valid_pdf(mimetype: Optional[str], content: bytes) -> bool:
 def is_valid_url(url: str) -> bool:
     # Lightweight URL validation without extra deps
     try:
-        from urllib.parse import urlparse
-
         parsed = urlparse(url)
         return all([parsed.scheme in ("http", "https"), parsed.netloc])
     except Exception:
@@ -189,6 +190,80 @@ def _extract_text_ocr_optional(data: bytes) -> Optional[str]:
         return None
 
 
+def _strip_html_tags(html: str) -> str:
+    try:
+        # Remove script and style blocks
+        html = re.sub(r"<script[\s\S]*?</script>", " ", html, flags=re.IGNORECASE)
+        html = re.sub(r"<style[\s\S]*?</style>", " ", html, flags=re.IGNORECASE)
+        # Remove all tags
+        text = re.sub(r"<[^>]+>", " ", html)
+        # Collapse whitespace
+        text = re.sub(r"\s+", " ", text)
+        return text.strip()
+    except Exception:
+        return ""
+
+
+def _tidy_text(text: str, max_len: int = 15000) -> str:
+    t = (text or "").strip()
+    if len(t) > max_len:
+        t = t[:max_len]
+    return t
+
+
+def _scrape_job_description(url: str) -> Optional[str]:
+    """Best-effort server-side scrape of JD content.
+
+    1) Try firecrawl-py if FIRECRAWL_API_KEY is set.
+    2) Fallback to urllib to fetch HTML and strip tags.
+    Returns plain text or None on failure.
+    """
+    if not url or not is_valid_url(url):
+        return None
+
+    # Try Firecrawl Cloud if configured
+    try:
+        api_key = os.getenv("FIRECRAWL_API_KEY")
+        if api_key:
+            try:
+                from firecrawl import Firecrawl  # type: ignore
+                client = Firecrawl(api_key=api_key)
+                data = None
+                try:
+                    # Newer SDKs
+                    data = client.scrape_url(url)  # type: ignore[attr-defined]
+                except Exception:
+                    try:
+                        # Older SDKs
+                        data = client.scrape(url)  # type: ignore[attr-defined]
+                    except Exception:
+                        data = None
+                if isinstance(data, dict):
+                    for key in ("markdown", "md", "content", "text", "html"):
+                        if key in data and data[key]:
+                            val = data[key]
+                            if isinstance(val, str):
+                                if "<" in val and "</" in val:
+                                    return _tidy_text(_strip_html_tags(val))
+                                return _tidy_text(val)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Fallback to stdlib fetch
+    try:
+        import urllib.request
+
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            raw = resp.read()
+            html = raw.decode("utf-8", errors="ignore")
+            return _tidy_text(_strip_html_tags(html))
+    except Exception:
+        return None
+
+
 def _parse_score_from_markdown(md: Optional[str]) -> Optional[int]:
     """Extract a 0-100 score from a Markdown report.
 
@@ -266,16 +341,31 @@ async def analyze_resume(
             status_code=422,
         )
 
+    # Pre-scrape JD if link is provided and description is weak/missing
+    scraped_jd: Optional[str] = None
+    if job_link and (not job_description or len(job_description.strip()) < 200):
+        scraped_jd = _scrape_job_description(job_link)
+        if scraped_jd and len(scraped_jd) < 50:
+            scraped_jd = None
+
     # Run the Gemini agent to generate the Markdown report
     try:
         from agents.resume_agent import AgentInputs, run_resume_analysis
 
+        # If we scraped JD successfully, pass it as text and omit URL to avoid duplicate tool calls
+        jd_text_for_agent = scraped_jd or job_description
+        jd_url_for_agent = None if scraped_jd else job_link
+
+        custom_note = None
+        if scraped_jd:
+            custom_note = "Job description was pre-scraped server-side. Do NOT call tools; use the provided JD text."
+
         inputs = AgentInputs(
             resume_text=extracted_text,
             job_title=job_title,
-            job_description_text=job_description,
-            job_description_url=job_link,
-            custom_instructions=None,
+            job_description_text=jd_text_for_agent,
+            job_description_url=jd_url_for_agent,
+            custom_instructions=custom_note,
         )
 
         analysis_report_md = run_resume_analysis(inputs)
@@ -342,6 +432,13 @@ async def analyze_resumes_batch(
             status_code=413,
         )
 
+    # Pre-scrape JD once for the batch if needed (avoid N network calls)
+    batch_scraped_jd: Optional[str] = None
+    if job_link and (not job_description or len(job_description.strip()) < 200):
+        batch_scraped_jd = _scrape_job_description(job_link)
+        if batch_scraped_jd and len(batch_scraped_jd) < 50:
+            batch_scraped_jd = None
+
     results = []
     for resume in resumes:
         # Read file contents with size guard
@@ -391,12 +488,18 @@ async def analyze_resumes_batch(
         try:
             from agents.resume_agent import AgentInputs, run_resume_analysis
 
+            jd_text_for_agent = batch_scraped_jd or job_description
+            jd_url_for_agent = None if batch_scraped_jd else job_link
+            custom_note = None
+            if batch_scraped_jd:
+                custom_note = "Job description was pre-scraped server-side. Do NOT call tools; use the provided JD text."
+
             inputs = AgentInputs(
                 resume_text=extracted_text,
                 job_title=job_title,
-                job_description_text=job_description,
-                job_description_url=job_link,
-                custom_instructions=None,
+                job_description_text=jd_text_for_agent,
+                job_description_url=jd_url_for_agent,
+                custom_instructions=custom_note,
             )
 
             analysis_report_md = run_resume_analysis(inputs)
