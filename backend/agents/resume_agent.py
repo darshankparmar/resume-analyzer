@@ -143,11 +143,11 @@ def build_resume_agent() -> Agent:
     agent = Agent(
         model=model,
         tools=[
-            ReasoningTools(  
-                think=True,  
-                analyze=True,  
-                add_instructions=True,  
-            ),  
+            # ReasoningTools(  
+            #     think=True,  
+            #     analyze=True,  
+            #     add_instructions=True,  
+            # ),  
             FirecrawlTools(scrape=True, crawl=False), 
             DuckDuckGoTools()
         ],
