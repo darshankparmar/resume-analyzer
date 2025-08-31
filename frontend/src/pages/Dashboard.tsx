@@ -17,7 +17,7 @@ export default function Dashboard() {
                             Analyze resumes with clarity.
                         </h1>
                         <p className="mt-4 text-lg sm:text-xl text-slate-600">
-                            Upload a resume, add job details, and get a concise, ATS-friendly report. Fast. Accurate. Human-friendly.
+                            Upload a resume, add job details, and get a concise. Fast. Accurate. Human-friendly.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-3">
                             <SignedOut>

@@ -1,6 +1,6 @@
 # Resume Analyzer
 
-Analyze and optimize your resume for any job description. Get ATS-friendly insights and actionable recommendations.
+Analyze and optimize your resume for any job description. Get insights and actionable recommendations.
 
 ## Development
 
