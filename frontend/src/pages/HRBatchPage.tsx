@@ -450,10 +450,12 @@ const HRBatchPage: React.FC = () => {
                                                 Clear
                                             </button>
                                         )}
+                                        {jobDescription && (
+                                            <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${jobDescription.length > JD_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{jobDescription.length}/{JD_MAX}</span>
+                                        )}
                                     </div>
                                     <div className="flex justify-between items-center mt-1">
                                         <p className="text-xs text-slate-500 dark:text-slate-400">Optional if Job Link is provided.</p>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${jobDescription.length > JD_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{jobDescription.length}/{JD_MAX}</span>
                                     </div>
                                 </div>
 
@@ -476,7 +478,7 @@ const HRBatchPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        HR Focus / Questions
+                                        HR Notes
                                     </label>
                                     <div className="relative">
                                         <textarea
