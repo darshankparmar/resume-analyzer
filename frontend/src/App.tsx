@@ -10,7 +10,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/Footer";
 import HRBatchPage from "./pages/HRBatchPage";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -25,8 +24,8 @@ const App = () => (
           <div className="flex-1 flex flex-col">
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/individual" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/hr" element={<ProtectedRoute><HRBatchPage /></ProtectedRoute>} />
+              <Route path="/individual" element={<Index />} />
+              <Route path="/hr" element={<HRBatchPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

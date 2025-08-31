@@ -1,4 +1,3 @@
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { FileText, Shield, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -20,26 +19,17 @@ export default function Dashboard() {
                             Upload a resume, add job details, and get a concise. Fast. Accurate. Human-friendly.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                            <SignedOut>
-                                <SignInButton>
-                                    <button className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                        Sign in to get started
-                                        <ArrowRight className="ml-2 h-5 w-5" />
-                                    </button>
-                                </SignInButton>
-                            </SignedOut>
-                            <SignedIn>
-                                <Link
-                                    to="/individual"
-                                    className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-white shadow-sm hover:bg-slate-800"
-                                >
-                                    Go to Individual Analysis
-                                    <ArrowRight className="ml-2 h-5 w-5" />
-                                </Link>
-                                <div className="inline-flex items-center rounded-xl border bg-white px-3 py-2 text-slate-700">
-                                    <UserButton />
-                                </div>
-                            </SignedIn>
+                            <Link
+                                to="/individual"
+                                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-white shadow-sm hover:bg-slate-800"
+                            >
+                                Go to Individual Analysis
+                                <ArrowRight className="ml-2 h-5 w-5" />
+                            </Link>
+                            <Link to="/hr" className="inline-flex items-center justify-center rounded-xl border px-5 py-3 text-slate-700 hover:bg-white">
+                                Open HR Portal
+                                <ArrowRight className="ml-2 h-5 w-5" />
+                            </Link>
                         </div>
                     </div>
                 </div>
