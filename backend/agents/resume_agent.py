@@ -26,10 +26,12 @@ try:
     from agno.models.google import Gemini
     from agno.utils.pprint import pprint_run_response
     from agno.tools.firecrawl import FirecrawlTools
+    from agno.tools.duckduckgo import DuckDuckGoTools
+    from agno.tools.reasoning import ReasoningTools  
 except Exception as e:  # pragma: no cover
     # Provide helpful message if agno is missing
     raise ImportError(
-        "Required package 'agno' not found. Install with: pip install agno google-genai firecrawl-py"
+        "Required package 'agno' not found. Install with: pip install agno google-genai firecrawl-py duckduckgo-search"
     ) from e
 
 
@@ -67,8 +69,8 @@ def build_resume_agent() -> Agent:
     provider = (os.getenv("AI_PROVIDER") or os.getenv("MODEL_PROVIDER") or "gemini").strip().lower()
     model = None
     if provider == "openai":
-        # Prefer OpenAI reasoning models (e.g., o4-mini). Fallback to standard if unavailable.
-        openai_model_id = os.getenv("OPENAI_MODEL") or "o4-mini"
+        # Prefer OpenAI reasoning models (e.g., gpt-5-mini). Fallback to standard if unavailable.
+        openai_model_id = os.getenv("OPENAI_MODEL") or "gpt-5-mini"
         try:
             # agno >=0.4 likely exposes OpenAI via this path; try common options safely.
             try:
@@ -78,12 +80,10 @@ def build_resume_agent() -> Agent:
             model = OpenAIModel(id=openai_model_id, temperature=0.2)
         except Exception:
             # If OpenAI path not available, fall back to Gemini to keep service running.
-            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
+            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-2.5-flash", temperature=0.2, max_output_tokens=1200)
     else:
         # Default Gemini
-        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
-
-    web_search = FirecrawlTools(scrape=True, crawl=False)
+        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-2.5-flash", temperature=0.2, max_output_tokens=1200)
 
     system_prompt = (
         "You are an AI Resume Analyst. "
@@ -130,14 +130,23 @@ def build_resume_agent() -> Agent:
         "- Each bullet ≤22 words. No sub-bullets, no tables, no code blocks.\n"
         "- If any rule cannot be followed (e.g., evidence not present), state that explicitly in the 'Assumptions' section.\n"
     )
-    
+
     agent = Agent(
         model=model,
-        tools=[web_search],
+        tools=[
+            ReasoningTools(  
+                think=True,  
+                analyze=True,  
+                add_instructions=True,  
+            ),  
+            FirecrawlTools(scrape=True, crawl=False), 
+            DuckDuckGoTools()
+        ],
         instructions=system_prompt,
-        markdown=True,
-        debug_mode=False,
-        show_tool_calls=False
+        debug_mode=True,
+        show_tool_calls=True,
+        reasoning=True,  
+        stream_intermediate_steps=True  
     )
     return agent
 
