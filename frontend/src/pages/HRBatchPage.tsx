@@ -26,6 +26,7 @@ const HRBatchPage: React.FC = () => {
     const [jobLink, setJobLink] = useState("");
     const [jobDescription, setJobDescription] = useState("");
     const [files, setFiles] = useState<UploadedFile[]>([]);
+    const [hrFocus, setHrFocus] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [results, setResults] = useState<Record<string, { name: string; success: boolean; score?: number | null; report?: string; error?: string }>>({});
     const [preview, setPreview] = useState<{ open: boolean; name: string; report: string | null }>(
@@ -34,6 +35,19 @@ const HRBatchPage: React.FC = () => {
     const [resumePreview, setResumePreview] = useState<{ open: boolean; name: string; url: string | null }>({ open: false, name: "", url: null });
     const { toast } = useToast();
     const API_BASE = (import.meta as ImportMeta).env?.VITE_API_BASE_URL || "";
+    const JD_MAX = 3000;
+    const HR_MAX = 500;
+    const FOCUS_SUGGESTIONS = [
+        "Next.js",
+        "TypeScript",
+        "React",
+        "Node.js",
+        "AWS",
+        "GraphQL",
+        "Microservices",
+        "System Design",
+        "Team Leadership",
+    ];
 
     const fileId = (f: File) => `${f.name}:${f.size}:${f.lastModified}`;
     const analyzedCount = useMemo(() => Object.keys(results).length, [results]);
@@ -83,6 +97,7 @@ const HRBatchPage: React.FC = () => {
             form.append("jobTitle", jobTitle.trim());
             if (jobLink.trim()) form.append("jobLink", jobLink.trim());
             if (jobDescription.trim()) form.append("jobDescription", jobDescription.trim());
+            if (hrFocus.trim()) form.append("hrFocus", hrFocus.trim());
 
             const res = await fetch(`${API_BASE}/api/v1/analyze-resumes-batch`, {
                 method: "POST",
@@ -286,29 +301,31 @@ const HRBatchPage: React.FC = () => {
             </div>
         `;
 
-            const reportsHTML = successfulReports.map((r, index) => {
-                const htmlContent = (r.report || '')
-                    .replace(/^# (.*$)/gim, '<h1 style="font-size: 24px; font-weight: bold; margin: 20px 0 10px 0; color: #1f2937;">$1</h1>')
-                    .replace(/^## (.*$)/gim, '<h2 style="font-size: 20px; font-weight: bold; margin: 16px 0 8px 0; color: #374151;">$1</h2>')
-                    .replace(/^### (.*$)/gim, '<h3 style="font-size: 18px; font-weight: bold; margin: 12px 0 6px 0; color: #4b5563;">$1</h3>')
-                    .replace(/^\*\*(.*)\*\*/gim, '<strong style="font-weight: bold;">$1</strong>')
-                    .replace(/^\*(.*)\*/gim, '<em style="font-style: italic;">$1</em>')
-                    .replace(/^- (.*$)/gim, '<li style="margin: 4px 0;">$1</li>')
-                    .replace(/\n\n/g, '</p><p style="margin: 12px 0;">')
-                    .replace(/\n/g, '<br>');
+            const reportsHTML = successfulReports
+                .map((r, index) => {
+                    const htmlContent = (r.report || '')
+                        .replace(/^# (.*$)/gim, '<h1 style="font-size: 24px; font-weight: bold; margin: 20px 0 10px 0; color: #1f2937;">$1</h1>')
+                        .replace(/^## (.*$)/gim, '<h2 style="font-size: 20px; font-weight: bold; margin: 16px 0 8px 0; color: #374151;">$1</h2>')
+                        .replace(/^### (.*$)/gim, '<h3 style="font-size: 18px; font-weight: bold; margin: 12px 0 6px 0; color: #4b5563;">$1</h3>')
+                        .replace(/^\*\*(.*)\*\*/gim, '<strong style="font-weight: bold;">$1</strong>')
+                        .replace(/^\*(.*)\*/gim, '<em style="font-style: italic;">$1</em>')
+                        .replace(/^- (.*$)/gim, '<li style="margin: 4px 0;">$1</li>')
+                        .replace(/\n\n/g, '</p><p style="margin: 12px 0;">')
+                        .replace(/\n/g, '<br>');
 
-                return `
-                <div style="page-break-before: ${index > 0 ? 'always' : 'auto'}; margin-bottom: 30px;">
-                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
-                        <h2 style="font-size: 22px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">${index + 1}. ${cleanName(r.name)}</h2>
-                        ${r.score != null ? `<p style="font-size: 16px; color: #059669; font-weight: 600; margin: 0;">Compatibility Score: ${Math.round(r.score)}%</p>` : ''}
+                    return `
+                    <div style="page-break-before: ${index > 0 ? 'always' : 'auto'}; margin-bottom: 30px;">
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                            <h2 style="font-size: 22px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">${index + 1}. ${cleanName(r.name)}</h2>
+                            ${r.score != null ? `<p style=\"font-size: 16px; color: #059669; font-weight: 600; margin: 0;\">Compatibility Score: ${Math.round(r.score)}%</p>` : ''}
+                        </div>
+                        <div style="margin: 0;">
+                            <p style="margin: 12px 0;">${htmlContent}</p>
+                        </div>
                     </div>
-                    <div style="margin: 0;">
-                        <p style="margin: 12px 0;">${htmlContent}</p>
-                    </div>
-                </div>
-            `;
-            }).join('');
+                `;
+                })
+                .join('');
 
             tempDiv.innerHTML = coverPage + reportsHTML;
             document.body.appendChild(tempDiv);
@@ -341,7 +358,7 @@ const HRBatchPage: React.FC = () => {
             pdf.save(`batch-analysis-${jobTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`);
 
             document.body.removeChild(tempDiv);
-            toast({ title: "PDF downloaded", description: `Combined PDF report with ${successfulReports.length} analyses.` });
+            toast({ title: "PDF downloaded", description: `Combined report for ${successfulReports.length} candidates.` });
 
         } catch (error) {
             console.error('PDF generation failed:', error);
@@ -423,6 +440,7 @@ const HRBatchPage: React.FC = () => {
                                         className="h-12 text-base border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
                                         type="url"
                                     />
+                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional — if provided, the server will fetch the job description automatically.</p>
                                 </div>
                             </div>
 
@@ -430,12 +448,44 @@ const HRBatchPage: React.FC = () => {
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                     Job Description
                                 </label>
-                                <textarea
-                                    className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                    value={jobDescription}
-                                    onChange={e => setJobDescription(e.target.value)}
-                                    placeholder="Paste the complete job description here for better analysis accuracy..."
-                                />
+                                <div className="relative">
+                                    <textarea
+                                        className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                        value={jobDescription}
+                                        onChange={e => setJobDescription(e.target.value.slice(0, JD_MAX))}
+                                        placeholder="Paste the complete job description here for better analysis accuracy..."
+                                    />
+                                    {jobDescription && (
+                                        <button
+                                            type="button"
+                                            className="absolute top-2 right-2 text-xs text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1"
+                                            onClick={() => setJobDescription("")}
+                                            aria-label="Clear job description"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex justify-between items-center mt-1">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Optional if Job Link is provided.</p>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${jobDescription.length > JD_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{jobDescription.length}/{JD_MAX}</span>
+                                </div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mt-6 mb-2">
+                                    HR Focus / Questions (optional)
+                                </label>
+                                <div className="relative">
+                                    <textarea
+                                        className="w-full h-24 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                        value={hrFocus}
+                                        onChange={e => setHrFocus(e.target.value.slice(0, HR_MAX))}
+                                        placeholder="Add specific checks, e.g., ‘Ensure candidate has strong Next.js production experience’."
+                                    />
+                                    {hrFocus && (
+                                        <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${hrFocus.length > HR_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{hrFocus.length}/{HR_MAX}</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                </div>
                             </div>
                         </div>
                     </div>

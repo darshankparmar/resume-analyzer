@@ -304,11 +304,14 @@ async def analyze_resume(
     job_description_snake: Optional[str] = Form(None, alias="job_description"),
     job_link_camel: Optional[str] = Form(None, alias="jobLink"),
     job_link_snake: Optional[str] = Form(None, alias="job_link"),
+    hr_focus_camel: Optional[str] = Form(None, alias="hrFocus"),
+    hr_focus_snake: Optional[str] = Form(None, alias="hr_focus"),
 ):
     # Normalize inputs
     job_title: Optional[str] = job_title_camel or job_title_snake
     job_description: Optional[str] = job_description_camel or job_description_snake
     job_link: Optional[str] = job_link_camel or job_link_snake
+    hr_focus: Optional[str] = hr_focus_camel or hr_focus_snake
     
     # Validate required fields and optional URL
     err = _validate_required(job_title, resume)
@@ -348,20 +351,31 @@ async def analyze_resume(
         if scraped_jd and len(scraped_jd) < 50:
             scraped_jd = None
 
-    # Run the Gemini agent to generate the Markdown report
+    # Run the agent to generate the Markdown report
     try:
-        from agents.resume_agent import AgentInputs, run_resume_analysis
+        try:
+            from agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
+        except Exception:
+            from backend.agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
 
         # If we scraped JD successfully, pass it as text and omit URL to avoid duplicate JD scraping tool calls
         jd_text_for_agent = scraped_jd or job_description
         jd_url_for_agent = None if scraped_jd else job_link
 
-        custom_note = None
+        # Build custom instructions for the agent (server notes + optional HR focus)
+        custom_notes: List[str] = []
         if scraped_jd:
-            custom_note = (
-                "Job description was pre-scraped server-side. Do NOT scrape the JD URL again; use the provided JD text.\n"
+            custom_notes.append(
+                "Job description was pre-scraped server-side. Do NOT scrape the JD URL again; use the provided JD text."
+            )
+            custom_notes.append(
                 "You may consult the provided reference links for resume writing guidance if needed."
             )
+        if hr_focus and hr_focus.strip():
+            custom_notes.append(
+                "HR Focus/Questions (PRIORITY — evaluate these first; treat JD as secondary):\n" + hr_focus.strip()
+            )
+        custom_note = "\n".join(custom_notes) if custom_notes else None
 
         inputs = AgentInputs(
             resume_text=extracted_text,
@@ -397,11 +411,14 @@ async def analyze_resumes_batch(
     job_description_snake: Optional[str] = Form(None, alias="job_description"),
     job_link_camel: Optional[str] = Form(None, alias="jobLink"),
     job_link_snake: Optional[str] = Form(None, alias="job_link"),
+    hr_focus_camel: Optional[str] = Form(None, alias="hrFocus"),
+    hr_focus_snake: Optional[str] = Form(None, alias="hr_focus"),
 ):
     # Normalize inputs
     job_title: Optional[str] = job_title_camel or job_title_snake
     job_description: Optional[str] = job_description_camel or job_description_snake
     job_link: Optional[str] = job_link_camel or job_link_snake
+    hr_focus: Optional[str] = hr_focus_camel or hr_focus_snake
 
     # Validate required fields
     missing = []
@@ -489,16 +506,27 @@ async def analyze_resumes_batch(
 
         # Run the Gemini agent to generate the Markdown report and score
         try:
-            from agents.resume_agent import AgentInputs, run_resume_analysis
+            try:
+                from agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
+            except Exception:
+                from backend.agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
 
             jd_text_for_agent = batch_scraped_jd or job_description
             jd_url_for_agent = None if batch_scraped_jd else job_link
-            custom_note = None
+            # Build custom instructions for the agent (server notes + optional HR focus)
+            custom_notes: List[str] = []
             if batch_scraped_jd:
-                custom_note = (
-                    "Job description was pre-scraped server-side. Do NOT scrape the JD URL again; use the provided JD text.\n"
+                custom_notes.append(
+                    "Job description was pre-scraped server-side. Do NOT scrape the JD URL again; use the provided JD text."
+                )
+                custom_notes.append(
                     "You may consult the provided reference links for resume writing guidance if needed."
                 )
+            if hr_focus and hr_focus.strip():
+                custom_notes.append(
+                    "HR Focus/Questions (PRIORITY — evaluate these first; treat JD as secondary):\n" + hr_focus.strip()
+                )
+            custom_note = "\n".join(custom_notes) if custom_notes else None
 
             inputs = AgentInputs(
                 resume_text=extracted_text,
@@ -513,7 +541,10 @@ async def analyze_resumes_batch(
             score = None
             try:
                 # Import lazily to avoid hard dependency
-                from agents.resume_agent import run_resume_score  # type: ignore
+                try:
+                    from agents.resume_agent import run_resume_score  # type: ignore
+                except Exception:
+                    from backend.agents.resume_agent import run_resume_score  # type: ignore
                 try:
                     score = run_resume_score(inputs)  # pyright: ignore
                 except Exception:

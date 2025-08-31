@@ -46,7 +46,7 @@ setx AI_PROVIDER=gemini
 
 REM For Gemini
 setx GOOGLE_API_KEY=your_gemini_api_key
-setx GEMINI_MODEL=gemini-2.5-flash
+setx GEMINI_MODEL=gemini-1.5-flash
 
 REM For OpenAI (optional)
 setx OPENAI_API_KEY=your_openai_api_key

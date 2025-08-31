@@ -80,10 +80,10 @@ def build_resume_agent() -> Agent:
             model = OpenAIModel(id=openai_model_id, temperature=0.2)
         except Exception:
             # If OpenAI path not available, fall back to Gemini to keep service running.
-            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-2.5-flash", temperature=0.2, max_output_tokens=1200)
+            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
     else:
         # Default Gemini
-        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-2.5-flash", temperature=0.2, max_output_tokens=1200)
+        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
 
     system_prompt = (
         "You are an AI Resume Analyst. "
@@ -97,6 +97,11 @@ def build_resume_agent() -> Agent:
         "- Do NOT invent skills, companies, dates, or experiences not present in the resume.\n"
         "- If JD is missing or very short (<200 chars), proceed but add an 'Assumptions' section describing what you assumed.\n"
         "- Avoid bias: do NOT consider gender, age, ethnicity, name, or photos when scoring or recommending.\n\n"
+
+        "HR Focus priority:\n"
+        "- If 'HR Focus/Questions' are provided (see Additional Instructions), treat them as the PRIMARY evaluation criteria.\n"
+        "- Address each focus item explicitly across Strengths, Areas for Improvement, Recommendations, and Competency sections where applicable.\n"
+        "- Consider the JD as secondary context only after addressing HR Focus requirements.\n\n"
 
         "Scoring rules:\n"
         "- Provide an integer Overall Match Score 0–100 (no decimals) and a Confidence level (Low/Medium/High).\n"
@@ -163,6 +168,13 @@ def craft_prompt(inputs: AgentInputs) -> str:
     if inputs.custom_instructions:
         parts.append(f"Additional Instructions:\n{inputs.custom_instructions.strip()}\n")
 
+    # Emphasize prioritization of HR Focus when present in Additional Instructions
+    parts.append(
+        "Priority directive:\n"
+        "- If 'HR Focus/Questions' appear in Additional Instructions above, EVALUATE THE RESUME AGAINST THEM FIRST.\n"
+        "- Use Job Description (JD) as secondary context after HR Focus has been covered.\n"
+    )
+
     # Job info
     parts.append(f"Job Title: {inputs.job_title.strip() if inputs.job_title else ''}")
 
@@ -193,6 +205,7 @@ def craft_prompt(inputs: AgentInputs) -> str:
             "Task:\n"
             "- If a Job Description URL is present above, FIRST call the scrape_website tool with that exact URL and use its result as JD context.\n"
             "- Analyze the resume against the role using ONLY the provided context (resume text + provided JD text or scraped JD when applicable).\n"
+            "- PRIORITIZE any 'HR Focus/Questions' provided over general JD requirements; explicitly map bullets to these focus areas where relevant.\n"
             "- Do NOT invent skills, companies, dates, or experiences not present in the resume. If evidence is missing, state this in 'Assumptions'.\n"
             "- Be evidence-based: for every Strength/Gap/Competency bullet include a 1–6 word evidence snippet taken from the resume in square brackets at the start of the bullet.\n"
             "- Assign an integer Overall Match Score (0–100) per rubric and include a Confidence (Low|Medium|High).\n"

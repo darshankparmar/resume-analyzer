@@ -20,6 +20,7 @@ export interface JobData {
   title: string;
   description: string;
   link: string;
+  hrFocus?: string;
 }
 
 export interface AnalysisReport {
@@ -35,6 +36,7 @@ const Index = () => {
     title: "",
     description: "",
     link: "",
+    hrFocus: "",
   });
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(
     null
@@ -89,6 +91,7 @@ const Index = () => {
       if (jobData.description)
         formData.append("jobDescription", jobData.description);
       if (jobData.link) formData.append("jobLink", jobData.link);
+      if (jobData.hrFocus) formData.append("hrFocus", jobData.hrFocus);
 
       const res = await fetch(`${API_BASE}/api/v1/analyze-resume`, {
         method: "POST",
