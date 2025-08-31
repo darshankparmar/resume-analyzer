@@ -306,12 +306,24 @@ async def analyze_resume(
     job_link_snake: Optional[str] = Form(None, alias="job_link"),
     hr_focus_camel: Optional[str] = Form(None, alias="hrFocus"),
     hr_focus_snake: Optional[str] = Form(None, alias="hr_focus"),
+    hr_questions_camel: Optional[str] = Form(None, alias="hrQuestions"),
+    hr_questions_snake: Optional[str] = Form(None, alias="hr_questions"),
 ):
     # Normalize inputs
     job_title: Optional[str] = job_title_camel or job_title_snake
     job_description: Optional[str] = job_description_camel or job_description_snake
     job_link: Optional[str] = job_link_camel or job_link_snake
     hr_focus: Optional[str] = hr_focus_camel or hr_focus_snake
+    hr_questions_raw: Optional[str] = hr_questions_camel or hr_questions_snake
+    hr_questions: Optional[List[str]] = None
+    if hr_questions_raw:
+        try:
+            import json
+            parsed = json.loads(hr_questions_raw)
+            if isinstance(parsed, list):
+                hr_questions = [str(x) for x in parsed][:5]
+        except Exception:
+            hr_questions = None
     
     # Validate required fields and optional URL
     err = _validate_required(job_title, resume)
@@ -383,6 +395,7 @@ async def analyze_resume(
             job_description_text=jd_text_for_agent,
             job_description_url=jd_url_for_agent,
             custom_instructions=custom_note,
+            hr_questions=hr_questions,
         )
 
         analysis_report_md = run_resume_analysis(inputs)
@@ -413,12 +426,24 @@ async def analyze_resumes_batch(
     job_link_snake: Optional[str] = Form(None, alias="job_link"),
     hr_focus_camel: Optional[str] = Form(None, alias="hrFocus"),
     hr_focus_snake: Optional[str] = Form(None, alias="hr_focus"),
+    hr_questions_camel: Optional[str] = Form(None, alias="hrQuestions"),
+    hr_questions_snake: Optional[str] = Form(None, alias="hr_questions"),
 ):
     # Normalize inputs
     job_title: Optional[str] = job_title_camel or job_title_snake
     job_description: Optional[str] = job_description_camel or job_description_snake
     job_link: Optional[str] = job_link_camel or job_link_snake
     hr_focus: Optional[str] = hr_focus_camel or hr_focus_snake
+    hr_questions_raw: Optional[str] = hr_questions_camel or hr_questions_snake
+    hr_questions: Optional[List[str]] = None
+    if hr_questions_raw:
+        try:
+            import json
+            parsed = json.loads(hr_questions_raw)
+            if isinstance(parsed, list):
+                hr_questions = [str(x) for x in parsed][:5]
+        except Exception:
+            hr_questions = None
 
     # Validate required fields
     missing = []
@@ -534,6 +559,7 @@ async def analyze_resumes_batch(
                 job_description_text=jd_text_for_agent,
                 job_description_url=jd_url_for_agent,
                 custom_instructions=custom_note,
+                hr_questions=hr_questions,
             )
 
             analysis_report_md = run_resume_analysis(inputs)

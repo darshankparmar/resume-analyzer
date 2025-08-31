@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Eye, FileText, Loader2, X, Upload, Zap, CheckCircle, AlertCircle, Download, Link, Briefcase } from "lucide-react";
+import { Eye, FileText, Loader2, X, Upload, Zap, CheckCircle, AlertCircle, Download, Link, Briefcase, Plus } from "lucide-react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -27,6 +27,8 @@ const HRBatchPage: React.FC = () => {
     const [jobDescription, setJobDescription] = useState("");
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [hrFocus, setHrFocus] = useState("");
+    const [questionInput, setQuestionInput] = useState("");
+    const [questions, setQuestions] = useState<string[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [results, setResults] = useState<Record<string, { name: string; success: boolean; score?: number | null; report?: string; error?: string }>>({});
     const [preview, setPreview] = useState<{ open: boolean; name: string; report: string | null }>(
@@ -97,7 +99,19 @@ const HRBatchPage: React.FC = () => {
             form.append("jobTitle", jobTitle.trim());
             if (jobLink.trim()) form.append("jobLink", jobLink.trim());
             if (jobDescription.trim()) form.append("jobDescription", jobDescription.trim());
-            if (hrFocus.trim()) form.append("hrFocus", hrFocus.trim());
+            // Merge HR focus + questions into a single prioritized instruction for the backend
+            const cleanedQs = questions.map(q => q.trim()).filter(Boolean);
+            const hrFocusFinal = [
+                hrFocus.trim() || "",
+                cleanedQs.length
+                    ? (
+                        "Please also answer the following HR Questions directly within the existing sections (use concise bullets and evidence snippets as required by the format). If insufficient evidence, state it clearly.\n" +
+                        cleanedQs.map((q, i) => `${i + 1}. ${q}`).join("\n")
+                    )
+                    : ""
+            ].filter(Boolean).join("\n\n");
+            if (hrFocusFinal) form.append("hrFocus", hrFocusFinal);
+            if (cleanedQs.length) form.append("hrQuestions", JSON.stringify(cleanedQs));
 
             const res = await fetch(`${API_BASE}/api/v1/analyze-resumes-batch`, {
                 method: "POST",
@@ -129,6 +143,35 @@ const HRBatchPage: React.FC = () => {
         } finally {
             setIsAnalyzing(false);
         }
+    };
+
+    // HR Questions helpers
+    const addQuestion = () => {
+        const q = (questionInput || "").trim();
+        if (!q) return;
+        if (questions.length >= 5) {
+            toast({ title: "Limit reached", description: "You can add up to 5 questions.", variant: "destructive" });
+            return;
+        }
+        if (questions.some(existing => existing.toLowerCase() === q.toLowerCase())) {
+            toast({ title: "Duplicate question", description: "This question is already added.", variant: "destructive" });
+            return;
+        }
+        setQuestions(prev => [...prev, q]);
+        setQuestionInput("");
+    };
+
+    const removeQuestion = (idx: number) => {
+        setQuestions(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const quickAdd = (q: string) => {
+        if (questions.length >= 5) {
+            toast({ title: "Limit reached", description: "You can add up to 5 questions.", variant: "destructive" });
+            return;
+        }
+        if (questions.some(existing => existing.toLowerCase() === q.toLowerCase())) return;
+        setQuestions(prev => [...prev, q]);
     };
 
     const downloadReport = (name: string, report?: string) => {
@@ -482,7 +525,7 @@ const HRBatchPage: React.FC = () => {
                                     </label>
                                     <div className="relative">
                                         <textarea
-                                            className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                            className="w-full h-24 md:h-28 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                             value={hrFocus}
                                             onChange={e => setHrFocus(e.target.value.slice(0, HR_MAX))}
                                             placeholder="Add specific checks, e.g., ‘Ensure candidate has strong Next.js production experience’."
@@ -490,6 +533,61 @@ const HRBatchPage: React.FC = () => {
                                         {hrFocus && (
                                             <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${hrFocus.length > HR_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{hrFocus.length}/{HR_MAX}</span>
                                         )}
+                                    </div>
+                                </div>
+
+                                {/* HR Questions */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                        HR Questions <span className="text-xs font-normal text-slate-500">(up to 5)</span>
+                                    </label>
+                                    <div className="flex gap-2 items-center">
+                                        <Input
+                                            value={questionInput}
+                                            onChange={(e) => setQuestionInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') { e.preventDefault(); addQuestion(); }
+                                            }}
+                                            placeholder="e.g. How many years of experience in React.js?"
+                                            className="h-10 flex-1"
+                                        />
+                                        <Button type="button" onClick={addQuestion} className="h-10 px-3" disabled={!questionInput.trim() || questions.length >= 5}>
+                                            <Plus className="h-4 w-4" />
+                                            <span className="sr-only">Add question</span>
+                                        </Button>
+                                    </div>
+                                    {questions.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {questions.map((q, idx) => (
+                                                <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs">
+                                                    <span className="truncate max-w-[200px] sm:max-w-[280px]" title={q}>{q}</span>
+                                                    <button type="button" onClick={() => removeQuestion(idx)} className="text-slate-500 hover:text-red-600">
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {/* Quick suggestions */}
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {[
+                                            "Years of React.js experience?",
+                                            "Years of TypeScript experience?",
+                                            "Team size managed?",
+                                            "Notice period?",
+                                            "Relocation/Remote preference?",
+                                            "Highest degree?",
+                                        ].map((s, i) => (
+                                            <button
+                                                key={i}
+                                                type="button"
+                                                onClick={() => quickAdd(s)}
+                                                className="text-xs px-2 py-1 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700"
+                                                disabled={questions.length >= 5}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>

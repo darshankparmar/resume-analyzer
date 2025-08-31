@@ -61,6 +61,7 @@ class AgentInputs:
     job_description_text: Optional[str] = None
     job_description_url: Optional[str] = None
     custom_instructions: Optional[str] = None
+    hr_questions: Optional[List[str]] = None
 
 
 def build_resume_agent() -> Agent:
@@ -80,10 +81,10 @@ def build_resume_agent() -> Agent:
             model = OpenAIModel(id=openai_model_id, temperature=0.2)
         except Exception:
             # If OpenAI path not available, fall back to Gemini to keep service running.
-            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
+            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=2000)
     else:
         # Default Gemini
-        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=1200)
+        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=2000)
 
     system_prompt = (
         "You are an AI Resume Analyst. "
@@ -119,6 +120,9 @@ def build_resume_agent() -> Agent:
         "## 🔧 Areas for Improvement\n"
         "- [snippet] Bullet (≤22 words)\n"
         "- 3–7 bullets total\n\n"
+        "## ❓ HR Q&A (INCLUDE THIS SECTION IF HR Questions are provided)\n"
+        "- Q: <question>\n"
+        "- A: [evidence snippet] concise answer ≤22 words (or 'Insufficient evidence')\n\n"
         "## 🎯 Recommendations\n"
         "- 3–5 concise, actionable bullets (≤22 words each)\n\n"
         "## 📈 Competency Analysis\n"
@@ -174,6 +178,16 @@ def craft_prompt(inputs: AgentInputs) -> str:
         "- If 'HR Focus/Questions' appear in Additional Instructions above, EVALUATE THE RESUME AGAINST THEM FIRST.\n"
         "- Use Job Description (JD) as secondary context after HR Focus has been covered.\n"
     )
+
+    # HR Questions (if provided)
+    if inputs.hr_questions:
+        q_list = [q.strip() for q in inputs.hr_questions if isinstance(q, str) and q.strip()]
+        if q_list:
+            parts.append(
+                "HR Questions (answer each concisely; if unknown, state 'Insufficient evidence').\n"
+                "You MUST include the section '## ❓ HR Q&A' with one Q and one A per question.\n" +
+                "\n".join(f"- {q}" for q in q_list)
+            )
 
     # Job info
     parts.append(f"Job Title: {inputs.job_title.strip() if inputs.job_title else ''}")
