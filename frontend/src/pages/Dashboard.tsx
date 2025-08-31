@@ -46,7 +46,7 @@ export default function Dashboard() {
             </header>
 
             {/* Features */}
-            <main className="container mx-auto px-4 py-12">
+            <main className="container mx-auto px-4 pt-0 pb-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="rounded-2xl border bg-white p-6 shadow-sm">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
