@@ -431,6 +431,39 @@ const HRBatchPage: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                        Job Description
+                                    </label>
+                                    <div className="relative">
+                                        <textarea
+                                            className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                            value={jobDescription}
+                                            onChange={e => setJobDescription(e.target.value.slice(0, JD_MAX))}
+                                            placeholder="Paste the complete job description here for better analysis accuracy..."
+                                        />
+                                        {jobDescription && (
+                                            <button
+                                                type="button"
+                                                className="absolute top-2 right-2 text-xs text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1"
+                                                onClick={() => setJobDescription("")}
+                                                aria-label="Clear job description"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Optional if Job Link is provided.</p>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${jobDescription.length > JD_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{jobDescription.length}/{JD_MAX}</span>
+                                    </div>
+                                </div>
+
+
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Job Link
                                     </label>
                                     <Input
@@ -440,51 +473,22 @@ const HRBatchPage: React.FC = () => {
                                         className="h-12 text-base border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
                                         type="url"
                                     />
-                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional — if provided, the server will fetch the job description automatically.</p>
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                    Job Description
-                                </label>
-                                <div className="relative">
-                                    <textarea
-                                        className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                        value={jobDescription}
-                                        onChange={e => setJobDescription(e.target.value.slice(0, JD_MAX))}
-                                        placeholder="Paste the complete job description here for better analysis accuracy..."
-                                    />
-                                    {jobDescription && (
-                                        <button
-                                            type="button"
-                                            className="absolute top-2 right-2 text-xs text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1"
-                                            onClick={() => setJobDescription("")}
-                                            aria-label="Clear job description"
-                                        >
-                                            Clear
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex justify-between items-center mt-1">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Optional if Job Link is provided.</p>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${jobDescription.length > JD_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{jobDescription.length}/{JD_MAX}</span>
-                                </div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mt-6 mb-2">
-                                    HR Focus / Questions (optional)
-                                </label>
-                                <div className="relative">
-                                    <textarea
-                                        className="w-full h-24 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                        value={hrFocus}
-                                        onChange={e => setHrFocus(e.target.value.slice(0, HR_MAX))}
-                                        placeholder="Add specific checks, e.g., ‘Ensure candidate has strong Next.js production experience’."
-                                    />
-                                    {hrFocus && (
-                                        <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${hrFocus.length > HR_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{hrFocus.length}/{HR_MAX}</span>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                        HR Focus / Questions
+                                    </label>
+                                    <div className="relative">
+                                        <textarea
+                                            className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                            value={hrFocus}
+                                            onChange={e => setHrFocus(e.target.value.slice(0, HR_MAX))}
+                                            placeholder="Add specific checks, e.g., ‘Ensure candidate has strong Next.js production experience’."
+                                        />
+                                        {hrFocus && (
+                                            <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${hrFocus.length > HR_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{hrFocus.length}/{HR_MAX}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
