@@ -5,10 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 
+import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/Footer";
 import HRBatchPage from "./pages/HRBatchPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -22,8 +24,9 @@ const App = () => (
         <div className="min-h-screen flex flex-col">
           <div className="flex-1 flex flex-col">
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/hr" element={<HRBatchPage />} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/individual" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/hr" element={<ProtectedRoute><HRBatchPage /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

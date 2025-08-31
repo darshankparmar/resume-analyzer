@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
+import AppHeader from "@/components/AppHeader";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { FileUpload } from "@/components/FileUpload";
 import { JobInformation } from "@/components/JobInformation";
 import { AnalysisResults } from "@/components/AnalysisResults";
@@ -29,7 +29,7 @@ export interface AnalysisReport {
 }
 
 const Index = () => {
-  const [showHRDialog, setShowHRDialog] = useState(true);
+  // Removed legacy HR modal; navigation now lives in the header
   const navigate = useNavigate();
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [jobData, setJobData] = useState<JobData>({
@@ -166,62 +166,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      {/* HR Dialog */}
-      <Dialog open={showHRDialog}>
-        <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
-        <DialogContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md bg-white rounded-2xl shadow-2xl border-0 z-50 p-8">
-          <div className="text-center space-y-6">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
-              <Briefcase className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Are you HR?</h2>
-              <p className="text-gray-600">Access our batch analysis portal for processing multiple resumes</p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row w-full">
-              <Button
-                size="lg"
-                className="w-full sm:flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 rounded-xl font-semibold"
-                onClick={() => {
-                  setShowHRDialog(false);
-                  navigate("/hr");
-                }}
-              >
-                Yes, I'm HR
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:flex-1 border-2 border-gray-200 hover:bg-gray-50 rounded-xl font-semibold"
-                onClick={() => setShowHRDialog(false)}
-              >
-                Individual User
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modern Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-lg bg-white/80 border-b border-gray-200/50">
-        <div className="container mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Resume Analyzer
-                </h1>
-                <p className="text-sm text-gray-600 hidden sm:block">
-                  AI-powered resume optimization
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header with navigation & Sign out */}
+      <AppHeader />
 
       {/* Progress Steps - Mobile First */}
       <div className="container mx-auto px-4 sm:px-6 py-6">
