@@ -9,14 +9,13 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Eye, FileText, Loader2, X, Upload, Zap, CheckCircle, AlertCircle, Download, Link, Briefcase, Plus } from "lucide-react";
+import { FileText, Loader2, Zap } from "lucide-react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-interface UploadedFile {
-    file: File;
-    error?: string;
-}
+import JobDetailsForm from "@/components/hr/JobDetailsForm";
+import ResumeUploadSection from "@/components/hr/ResumeUploadSection";
+import UploadedFilesList from "@/components/hr/UploadedFilesList";
+import { AnalysisResult, UploadedFile } from "@/components/hr/types";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 2;
@@ -31,7 +30,7 @@ const HRBatchPage: React.FC = () => {
     const [questionInput, setQuestionInput] = useState("");
     const [questions, setQuestions] = useState<string[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [results, setResults] = useState<Record<string, { name: string; success: boolean; score?: number | null; report?: string; error?: string }>>({});
+    const [results, setResults] = useState<Record<string, AnalysisResult>>({});
     const [preview, setPreview] = useState<{ open: boolean; name: string; report: string | null }>(
         { open: false, name: "", report: null }
     );
@@ -40,17 +39,6 @@ const HRBatchPage: React.FC = () => {
     const API_BASE = (import.meta as ImportMeta).env?.VITE_API_BASE_URL || "";
     const JD_MAX = 3000;
     const HR_MAX = 500;
-    const FOCUS_SUGGESTIONS = [
-        "Next.js",
-        "TypeScript",
-        "React",
-        "Node.js",
-        "AWS",
-        "GraphQL",
-        "Microservices",
-        "System Design",
-        "Team Leadership",
-    ];
 
     const fileId = (f: File) => `${f.name}:${f.size}:${f.lastModified}`;
     const analyzedCount = useMemo(() => Object.keys(results).length, [results]);
@@ -449,396 +437,50 @@ const HRBatchPage: React.FC = () => {
 
             {/* Main Content */}
             <div className="max-w-4xl mx-auto px-4 pb-12 mt-5">
-                {/* Job Details Card */}
-                <Card className="mb-8 border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                    <div className="p-6 sm:p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                                <Briefcase className="h-5 w-5 text-white" />
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Job Details</h2>
-                        </div>
+                <JobDetailsForm
+                    jobTitle={jobTitle}
+                    setJobTitle={setJobTitle}
+                    jobLink={jobLink}
+                    setJobLink={setJobLink}
+                    jobDescription={jobDescription}
+                    setJobDescription={setJobDescription}
+                    hrFocus={hrFocus}
+                    setHrFocus={setHrFocus}
+                    JD_MAX={JD_MAX}
+                    HR_MAX={HR_MAX}
+                    questionInput={questionInput}
+                    setQuestionInput={setQuestionInput}
+                    questions={questions}
+                    addQuestion={addQuestion}
+                    removeQuestion={removeQuestion}
+                    quickAdd={quickAdd}
+                />
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Job Title <span className="text-red-500">*</span>
-                                    </label>
-                                    <Input
-                                        value={jobTitle}
-                                        onChange={e => setJobTitle(e.target.value)}
-                                        placeholder="e.g. Senior Software Engineer"
-                                        className="h-12 text-base border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Job Description
-                                    </label>
-                                    <div className="relative">
-                                        <textarea
-                                            className="w-full h-32 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                            value={jobDescription}
-                                            onChange={e => setJobDescription(e.target.value.slice(0, JD_MAX))}
-                                            placeholder="Paste the complete job description here for better analysis accuracy..."
-                                        />
-                                        {jobDescription && (
-                                            <button
-                                                type="button"
-                                                className="absolute top-2 right-2 text-xs text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1"
-                                                onClick={() => setJobDescription("")}
-                                                aria-label="Clear job description"
-                                            >
-                                                Clear
-                                            </button>
-                                        )}
-                                        {jobDescription && (
-                                            <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${jobDescription.length > JD_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{jobDescription.length}/{JD_MAX}</span>
-                                        )}
-                                    </div>
-                                    <div className="flex justify-between items-center mt-1">
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Optional if Job Link is provided.</p>
-                                    </div>
-                                </div>
-
-
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Job Link
-                                    </label>
-                                    <Input
-                                        value={jobLink}
-                                        onChange={e => setJobLink(e.target.value)}
-                                        placeholder="https://company.com/careers/job/123"
-                                        className="h-12 text-base border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
-                                        type="url"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        HR Notes
-                                    </label>
-                                    <div className="relative">
-                                        <textarea
-                                            className="w-full h-24 md:h-28 border border-slate-200 dark:border-slate-700 rounded-lg p-3 pr-20 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                            value={hrFocus}
-                                            onChange={e => setHrFocus(e.target.value.slice(0, HR_MAX))}
-                                            placeholder="Add specific checks, e.g., ‘Ensure candidate has strong Next.js production experience’."
-                                        />
-                                        {hrFocus && (
-                                            <span className={`absolute bottom-3 right-2 text-xs px-2 py-0.5 rounded-full ${hrFocus.length > HR_MAX * 0.9 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{hrFocus.length}/{HR_MAX}</span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* HR Questions */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        HR Questions <span className="text-xs font-normal text-slate-500">(up to 5)</span>
-                                    </label>
-                                    <div className="flex gap-2 items-center">
-                                        <Input
-                                            value={questionInput}
-                                            onChange={(e) => setQuestionInput(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') { e.preventDefault(); addQuestion(); }
-                                            }}
-                                            placeholder="e.g. How many years of experience in React.js?"
-                                            className="h-10 flex-1"
-                                        />
-                                        <Button type="button" onClick={addQuestion} className="h-10 px-3" disabled={!questionInput.trim() || questions.length >= 5}>
-                                            <Plus className="h-4 w-4" />
-                                            <span className="sr-only">Add question</span>
-                                        </Button>
-                                    </div>
-                                    {questions.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mt-3">
-                                            {questions.map((q, idx) => (
-                                                <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs">
-                                                    <span className="truncate max-w-[200px] sm:max-w-[280px]" title={q}>{q}</span>
-                                                    <button type="button" onClick={() => removeQuestion(idx)} className="text-slate-500 hover:text-red-600">
-                                                        <X className="h-3.5 w-3.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {/* Quick suggestions */}
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {[
-                                            "Years of React.js experience?",
-                                            "Years of TypeScript experience?",
-                                            "Team size managed?",
-                                            "Notice period?",
-                                            "Relocation/Remote preference?",
-                                            "Highest degree?",
-                                        ].map((s, i) => (
-                                            <button
-                                                key={i}
-                                                type="button"
-                                                onClick={() => quickAdd(s)}
-                                                className="text-xs px-2 py-1 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700"
-                                                disabled={questions.length >= 5}
-                                            >
-                                                {s}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* File Upload Card */}
-                <Card className="mb-8 border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                    <div className="p-6 sm:p-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
-                                    <Upload className="h-5 w-5 text-white" />
-                                </div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Upload Resumes</h2>
-                            </div>
-                            <Badge variant="outline" className="text-slate-600 border-slate-300">
-                                {files.length}/{MAX_FILES} files
-                            </Badge>
-                        </div>
-
-                        {/* Drag & Drop Zone */}
-                        <div className="relative">
-                            <input
-                                type="file"
-                                accept="application/pdf"
-                                multiple
-                                onChange={handleFileChange}
-                                disabled={files.length >= MAX_FILES}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
-                                id="file-upload"
-                            />
-                            <label
-                                htmlFor="file-upload"
-                                className={`block border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${files.length >= MAX_FILES
-                                    ? 'border-slate-200 bg-slate-50 cursor-not-allowed'
-                                    : 'border-blue-300 bg-blue-50/50 hover:bg-blue-100/50 hover:border-blue-400 cursor-pointer'
-                                    } dark:border-slate-600 dark:bg-slate-700/30 dark:hover:bg-slate-700/50`}
-                            >
-                                <Upload className="h-8 w-8 text-blue-500 mx-auto mb-3" />
-                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                                    {files.length >= MAX_FILES ? 'Maximum files reached' : 'Drop PDF resumes here'}
-                                </h3>
-                                <p className="text-slate-600 dark:text-slate-300 text-sm">
-                                    {files.length >= MAX_FILES
-                                        ? `You can upload up to ${MAX_FILES} files`
-                                        : `or click to browse • PDF only • Max ${MAX_SIZE_MB}MB each`
-                                    }
-                                </p>
-                            </label>
-                        </div>
-
-                        {/* Analysis Stats */}
-                        {(analyzedCount > 0 || isAnalyzing) && (
-                            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                                <div className="flex flex-col gap-4">
-                                    {/* Stats Grid */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                                        <div>
-                                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{analyzedCount}</div>
-                                            <div className="text-xs text-slate-600 dark:text-slate-400">Analyzed</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{successfulResults.length}</div>
-                                            <div className="text-xs text-slate-600 dark:text-slate-400">Successful</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{avgScore || '—'}</div>
-                                            <div className="text-xs text-slate-600 dark:text-slate-400">Avg Score</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{files.length}</div>
-                                            <div className="text-xs text-slate-600 dark:text-slate-400">Total Files</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Download Buttons */}
-                                    {successfulResults.length > 1 && (
-                                        <div className="flex justify-center gap-3 pt-2 border-t border-blue-200 dark:border-blue-700">
-                                            <Button
-                                                onClick={downloadAllReports}
-                                                variant="outline"
-                                                size="sm"
-                                                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white border-0 hover:from-green-700 hover:to-emerald-700 shadow-md flex-1 max-w-[120px]"
-                                            >
-                                                <Download className="h-4 w-4 mr-2" />
-                                                MD
-                                            </Button>
-                                            <Button
-                                                onClick={downloadAllReportsAsPDF}
-                                                variant="outline"
-                                                size="sm"
-                                                className="bg-gradient-to-r from-red-600 to-pink-600 text-white border-0 hover:from-red-700 hover:to-pink-700 shadow-md flex-1 max-w-[120px]"
-                                            >
-                                                <Download className="h-4 w-4 mr-2" />
-                                                PDF
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </Card>
+                <ResumeUploadSection
+                    filesCount={files.length}
+                    maxFiles={MAX_FILES}
+                    maxSizeMb={MAX_SIZE_MB}
+                    onFileChange={handleFileChange}
+                    disabled={files.length >= MAX_FILES}
+                    analyzedCount={analyzedCount}
+                    successfulCount={successfulResults.length}
+                    avgScore={avgScore}
+                    totalFiles={files.length}
+                    onDownloadAllMd={downloadAllReports}
+                    onDownloadAllPdf={downloadAllReportsAsPDF}
+                />
 
                 {/* Files List */}
-                {files.length > 0 && (
-                    <Card className="mb-8 border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                        <div className="p-6 sm:p-8">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Uploaded Resumes</h3>
-                            <div className="space-y-3">
-                                {files.map((f, i) => {
-                                    const key = fileId(f.file);
-                                    const r = results[key] || results[f.file.name];
-                                    const pct = r?.score != null ? Math.max(0, Math.min(100, Math.round(Number(r.score)))) : null;
-                                    const isAnalyzed = !!r;
-
-                                    return (
-                                        <div key={i} className={`group p-4 rounded-xl border-2 transition-all duration-200 ${f.error
-                                            ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-900/20'
-                                            : isAnalyzed
-                                                ? r.success
-                                                    ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/20'
-                                                    : 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-900/20'
-                                                : 'border-slate-200 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/30 hover:border-blue-300 hover:bg-blue-50/30'
-                                            }`}>
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                                                {/* File Info */}
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className={`p-2 rounded-lg ${f.error
-                                                        ? 'bg-red-100 dark:bg-red-900/30'
-                                                        : isAnalyzed
-                                                            ? r.success
-                                                                ? 'bg-green-100 dark:bg-green-900/30'
-                                                                : 'bg-orange-100 dark:bg-orange-900/30'
-                                                            : 'bg-blue-100 dark:bg-blue-900/30'
-                                                        }`}>
-                                                        {f.error ? (
-                                                            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                                                        ) : isAnalyzed ? (
-                                                            r.success ? (
-                                                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                            ) : (
-                                                                <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                                                            )
-                                                        ) : (
-                                                            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="font-semibold text-slate-900 dark:text-white truncate">{cleanName(f.file.name)}</p>
-                                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                            {(f.file.size / 1024 / 1024).toFixed(1)} MB
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Score & Actions */}
-                                                <div className="flex flex-col gap-3">
-                                                    {pct != null && (
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex-1">
-                                                                <Progress value={pct} className="h-3" />
-                                                            </div>
-                                                            <span className={`text-lg font-bold w-12 text-right ${pct >= 80 ? 'text-green-600 dark:text-green-400' :
-                                                                pct >= 60 ? 'text-blue-600 dark:text-blue-400' :
-                                                                    pct >= 40 ? 'text-orange-600 dark:text-orange-400' :
-                                                                        'text-red-600 dark:text-red-400'
-                                                                }`}>{pct}%</span>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex items-center gap-2">
-                                                        {/* <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => viewResume(f.file)}
-                                                            className="h-9 px-3 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-xs font-medium"
-                                                        >
-                                                            <Eye className="h-4 w-4 sm:mr-1" />
-                                                            <span className="hidden sm:inline">View</span>
-                                                        </Button> */}
-
-                                                        {r?.report && r.success && (
-                                                            <>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() => setPreview({ open: true, name: f.file.name, report: r.report || null })}
-                                                                    className="h-9 px-3 text-xs font-medium hover:bg-green-100 dark:hover:bg-green-900/30"
-                                                                >
-                                                                    Report
-                                                                </Button>
-                                                                <div className="flex">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        onClick={() => downloadReport(f.file.name, r.report)}
-                                                                        className="h-9 px-2 text-xs hover:bg-green-100 dark:hover:bg-green-900/30 rounded-r-none"
-                                                                        title="Download as Markdown"
-                                                                    >
-                                                                        MD
-                                                                    </Button>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        onClick={() => downloadReportAsPDF(f.file.name, r.report)}
-                                                                        className="h-9 px-2 text-xs hover:bg-green-100 dark:hover:bg-green-900/30 rounded-l-none border-l"
-                                                                        title="Download as PDF"
-                                                                    >
-                                                                        PDF
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        )}
-
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => handleRemove(i)}
-                                                            className="h-9 w-9 p-0 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600"
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Error Message */}
-                                            {f.error && (
-                                                <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-                                                    <p className="text-sm text-red-700 dark:text-red-400">{f.error}</p>
-                                                </div>
-                                            )}
-
-                                            {/* Analysis Error */}
-                                            {r?.error && !r.success && (
-                                                <div className="mt-3 p-2 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg">
-                                                    <p className="text-sm text-orange-700 dark:text-orange-400">{r.error}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </Card>
-                )}
+                <UploadedFilesList
+                    files={files}
+                    results={results}
+                    fileId={fileId}
+                    onRemove={handleRemove}
+                    onOpenReport={(name, report) => setPreview({ open: true, name, report: report || null })}
+                    onDownloadMd={downloadReport}
+                    onDownloadPdf={downloadReportAsPDF}
+                    cleanName={cleanName}
+                />
 
                 {/* Action Button */}
                 {files.length > 0 && (
