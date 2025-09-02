@@ -1,21 +1,47 @@
 # Resume Analyzer Backend (FastAPI)
 
-Single, stateless API to analyze a resume PDF. Core analysis logic is stubbed for now.
+Modular FastAPI service exposing two endpoints: individual analysis for job seekers and batch analysis for HR recruiters.
 
-## Endpoint
+## Project structure
 
-POST /api/v1/analyze-resume (multipart/form-data)
+```
+backend/
+	app/
+		api/
+			routes_individual.py   # POST /api/v1/analyze-resume
+			routes_batch.py        # POST /api/v1/analyze-resumes-batch
+		core/
+			settings.py            # CORS origins, size limits, etc.
+		services/
+			text_extraction.py     # pypdf + optional OCR
+			scrape.py              # optional JD scraping helpers
+		utils/
+			responses.py           # error helpers
+			validators.py          # URL/PDF validators
+			scoring.py             # parse score from Markdown
+		main_app.py              # app factory, CORS + routers
+	main.py                    # entrypoint: `uvicorn main:app`
+```
 
-- resume: PDF file, required, max 10MB
-- jobTitle: string, required
-- jobDescription: string, optional
-- jobLink: URL, optional
+## Endpoints
 
-Responses follow the schema described in `backend-structure.md`.
+- POST /api/v1/analyze-resume (multipart/form-data)
+
+  - resume: PDF file, required, max 10MB
+  - jobTitle: string, required
+  - jobDescription: string, optional
+  - jobLink: URL, optional
+
+- POST /api/v1/analyze-resumes-batch (multipart/form-data)
+  - resumes: list of up to 10 PDF files, each ≤ 2MB
+  - jobTitle: string, required
+  - jobDescription OR jobLink: required (one of them)
+
+Responses follow the schema in `backend-structure.md`.
 
 ## Run locally
 
-1. Create a virtual environment (optional) and install deps
+1. Install deps
 
 ```cmd
 python -m pip install --upgrade pip
@@ -30,15 +56,14 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 Open <http://localhost:8000/docs> for Swagger UI.
 
-## Notes
+## Configuration
 
-- File size and type are validated.
-- PDF signature check is heuristic.
-- Text extraction is implemented (pypdf with optional OCR fallback). If both fail, the API returns TEXT_EXTRACTION_FAILED.
+- CORS: set additional origins via env var `ALLOWED_ORIGINS` (comma-separated). Defaults include `http://localhost:8080` and your Vercel URL.
+- OCR: optional dependencies (pdf2image, pillow, pytesseract) and system tools (Poppler, Tesseract). On Windows, set `POPPLER_PATH` to the Poppler bin directory.
 
 ## Agent (Gemini or OpenAI via agno)
 
-Choose provider via environment variable (defaults to Gemini):
+Provider is selected via environment variables. Example (Windows cmd):
 
 ```cmd
 REM Choose provider: gemini (default) or openai
@@ -51,39 +76,4 @@ setx GEMINI_MODEL=gemini-1.5-flash
 REM For OpenAI (optional)
 setx OPENAI_API_KEY=your_openai_api_key
 setx OPENAI_MODEL=gpt-5-mini
-```
-
-Example usage in code:
-
-```python
-from agents.resume_agent import AgentInputs, run_resume_analysis
-import asyncio
-
-inputs = AgentInputs(
-	resume_text="<extracted resume text>",
-	job_title="Senior Software Engineer",
-	job_description_text="Optional JD text...",
-	job_description_url="https://company.com/careers/123",
-)
-
-md = asyncio.run(run_resume_analysis(inputs))
-print(md)
-```
-
-The FastAPI route now extracts PDF text and invokes the agent to return Markdown.
-
-### Optional OCR fallback
-
-If your PDFs are image-based, enable OCR:
-
-1. Install optional Python deps (uncomment in `requirements.txt` or install directly):
-   - pdf2image, pillow, pytesseract
-2. Install system tools:
-   - Windows: Install Poppler and set `POPPLER_PATH` to its bin folder.
-   - Install Tesseract OCR and ensure `tesseract.exe` is in PATH.
-
-Set environment variable (example Windows cmd):
-
-```cmd
-set POPPLER_PATH=C:\poppler-24.08.0\Library\bin
 ```
