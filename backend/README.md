@@ -76,4 +76,10 @@ setx GEMINI_MODEL=gemini-1.5-flash
 REM For OpenAI (optional)
 setx OPENAI_API_KEY=your_openai_api_key
 setx OPENAI_MODEL=gpt-5-mini
+
+REM For Firecrawl
+setx FIRECRAWL_API_KEY=your_firecrawl_api_key
+
+REM For Allowed Origins
+setx ALLOWED_ORIGINS=http://localhost:8080
 ```
