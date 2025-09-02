@@ -8,13 +8,12 @@ import {
   Calendar,
   CheckCircle,
   Trash2,
-  Share,
   Eye,
   EyeOff,
   Sparkles,
   Copy,
 } from "lucide-react";
-import type { AnalysisReport } from "@/pages/Index";
+import type { AnalysisReport } from "@/pages/Individual";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
@@ -22,13 +21,18 @@ import { useToast } from "@/hooks/use-toast";
 
 const markdownComponents: Components = {
   h1: ({ className, children, ...props }) => (
-    <h1 className={`text-3xl font-bold mb-6 text-gray-900 ${className ?? ""}`} {...props}>
+    <h1
+      className={`text-3xl font-bold mb-6 text-gray-900 ${className ?? ""}`}
+      {...props}
+    >
       {children}
     </h1>
   ),
   h2: ({ className, children, ...props }) => (
     <h2
-      className={`text-2xl font-bold mt-8 mb-4 text-gray-900 pb-2 border-b border-gray-200 ${className ?? ""}`}
+      className={`text-2xl font-bold mt-8 mb-4 text-gray-900 pb-2 border-b border-gray-200 ${
+        className ?? ""
+      }`}
       {...props}
     >
       {children}
@@ -36,7 +40,9 @@ const markdownComponents: Components = {
   ),
   h3: ({ className, children, ...props }) => (
     <h3
-      className={`text-xl font-semibold mt-6 mb-3 text-gray-800 ${className ?? ""}`}
+      className={`text-xl font-semibold mt-6 mb-3 text-gray-800 ${
+        className ?? ""
+      }`}
       {...props}
     >
       {children}
@@ -44,7 +50,9 @@ const markdownComponents: Components = {
   ),
   h4: ({ className, children, ...props }) => (
     <h4
-      className={`text-lg font-semibold mt-4 mb-2 text-gray-800 ${className ?? ""}`}
+      className={`text-lg font-semibold mt-4 mb-2 text-gray-800 ${
+        className ?? ""
+      }`}
       {...props}
     >
       {children}
@@ -67,8 +75,9 @@ const markdownComponents: Components = {
   ),
   blockquote: ({ className, children, ...props }) => (
     <blockquote
-      className={`border-l-4 border-blue-500 bg-blue-50/50 pl-4 py-2 italic text-gray-700 rounded-r-lg ${className ?? ""
-        }`}
+      className={`border-l-4 border-blue-500 bg-blue-50/50 pl-4 py-2 italic text-gray-700 rounded-r-lg ${
+        className ?? ""
+      }`}
       {...props}
     >
       {children}
@@ -76,8 +85,9 @@ const markdownComponents: Components = {
   ),
   a: ({ className, children, ...props }) => (
     <a
-      className={`text-blue-600 underline underline-offset-2 hover:text-blue-800 font-medium ${className ?? ""
-        }`}
+      className={`text-blue-600 underline underline-offset-2 hover:text-blue-800 font-medium ${
+        className ?? ""
+      }`}
       target="_blank"
       rel="noreferrer"
       {...props}
@@ -106,12 +116,18 @@ const markdownComponents: Components = {
     );
   },
   p: ({ className, children, ...props }) => (
-    <p className={`text-gray-700 leading-relaxed mb-4 ${className ?? ""}`} {...props}>
+    <p
+      className={`text-gray-700 leading-relaxed mb-4 ${className ?? ""}`}
+      {...props}
+    >
       {children}
     </p>
   ),
   strong: ({ className, children, ...props }) => (
-    <strong className={`font-semibold text-gray-900 ${className ?? ""}`} {...props}>
+    <strong
+      className={`font-semibold text-gray-900 ${className ?? ""}`}
+      {...props}
+    >
       {children}
     </strong>
   ),
@@ -134,8 +150,9 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     const element = document.createElement("a");
     const file = new Blob([report.content], { type: "text/markdown" });
     element.href = URL.createObjectURL(file);
-    element.download = `resume-analysis-${new Date().toISOString().split("T")[0]
-      }.md`;
+    element.download = `resume-analysis-${
+      new Date().toISOString().split("T")[0]
+    }.md`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -152,79 +169,83 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     try {
       // Create a clean HTML version for PDF conversion
       const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Resume Analysis Report</title>
-          <style>
-            body { 
-              font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
-              line-height: 1.6; 
-              color: #333; 
-              max-width: 800px; 
-              margin: 0 auto; 
-              padding: 40px 20px;
-              background: white;
-            }
-            h1 { color: #1e40af; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
-            h2 { color: #1e40af; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
-            h3 { color: #374151; margin-top: 25px; }
-            ul { padding-left: 0; }
-            li { 
-              list-style: none; 
-              padding: 8px 0; 
-              border-left: 3px solid #10b981; 
-              padding-left: 15px; 
-              margin: 5px 0;
-              background: #f0fdf4;
-            }
-            blockquote { 
-              border-left: 4px solid #3b82f6; 
-              background: #eff6ff; 
-              padding: 15px; 
-              margin: 20px 0; 
-              border-radius: 0 8px 8px 0;
-            }
-            code { 
-              background: #f3f4f6; 
-              padding: 2px 6px; 
-              border-radius: 4px; 
-              font-family: monospace;
-            }
-            .header { 
-              text-align: center; 
-              margin-bottom: 40px; 
-              padding: 20px; 
-              background: linear-gradient(135deg, #3b82f6, #1e40af); 
-              color: white; 
-              border-radius: 12px;
-            }
-            .footer { 
-              margin-top: 40px; 
-              padding: 20px; 
-              background: #f9fafb; 
-              border-radius: 12px; 
-              text-align: center; 
-              color: #6b7280;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1 style="color: white; border: none; margin: 0;">Resume Analysis Report</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Generated on ${new Date(report.timestamp).toLocaleDateString()}</p>
-          </div>
-          ${report.content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-          <div class="footer">
-            <p>Generated by Resume Analyzer AI • ${new Date().toLocaleDateString()}</p>
-          </div>
-        </body>
-        </html>
-      `;
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<meta charset="utf-8">
+					<title>Resume Analysis Report</title>
+					<style>
+						body { 
+							font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
+							line-height: 1.6; 
+							color: #333; 
+							max-width: 800px; 
+							margin: 0 auto; 
+							padding: 40px 20px;
+							background: white;
+						}
+						h1 { color: #1e40af; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+						h2 { color: #1e40af; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+						h3 { color: #374151; margin-top: 25px; }
+						ul { padding-left: 0; }
+						li { 
+							list-style: none; 
+							padding: 8px 0; 
+							border-left: 3px solid #10b981; 
+							padding-left: 15px; 
+							margin: 5px 0;
+							background: #f0fdf4;
+						}
+						blockquote { 
+							border-left: 4px solid #3b82f6; 
+							background: #eff6ff; 
+							padding: 15px; 
+							margin: 20px 0; 
+							border-radius: 0 8px 8px 0;
+						}
+						code { 
+							background: #f3f4f6; 
+							padding: 2px 6px; 
+							border-radius: 4px; 
+							font-family: monospace;
+						}
+						.header { 
+							text-align: center; 
+							margin-bottom: 40px; 
+							padding: 20px; 
+							background: linear-gradient(135deg, #3b82f6, #1e40af); 
+							color: white; 
+							border-radius: 12px;
+						}
+						.footer { 
+							margin-top: 40px; 
+							padding: 20px; 
+							background: #f9fafb; 
+							border-radius: 12px; 
+							text-align: center; 
+							color: #6b7280;
+						}
+					</style>
+				</head>
+				<body>
+					<div class="header">
+						<h1 style="color: white; border: none; margin: 0;">Resume Analysis Report</h1>
+						<p style="margin: 10px 0 0 0; opacity: 0.9;">Generated on ${new Date(
+              report.timestamp
+            ).toLocaleDateString()}</p>
+					</div>
+					${report.content
+            .replace(/\n/g, "<br>")
+            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}
+					<div class="footer">
+						<p>Generated by Resume Analyzer AI • ${new Date().toLocaleDateString()}</p>
+					</div>
+				</body>
+				</html>
+			`;
 
       // Convert HTML to PDF using browser's print functionality
-      const printWindow = window.open('', '_blank');
+      const printWindow = window.open("", "_blank");
       if (printWindow) {
         printWindow.document.write(htmlContent);
         printWindow.document.close();
@@ -241,6 +262,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         description: "Print dialog opened - save as PDF",
       });
     } catch (error) {
+      const _e = error; // eslint-disable-line @typescript-eslint/no-unused-vars
       toast({
         title: "❌ Download failed",
         description: "Please try again or download as Markdown",
@@ -259,6 +281,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         description: "Report content copied to clipboard",
       });
     } catch (error) {
+      const _e = error; // eslint-disable-line @typescript-eslint/no-unused-vars
       toast({
         title: "❌ Copy failed",
         description: "Please select and copy manually",
@@ -288,7 +311,9 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-2xl font-bold text-green-900">Analysis Complete!</h2>
+                <h2 className="text-2xl font-bold text-green-900">
+                  Analysis Complete!
+                </h2>
                 <Badge className="bg-green-100 text-green-800 border-green-300 rounded-full px-3">
                   Ready
                 </Badge>
@@ -308,7 +333,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-green-700 hover:bg-green-100 rounded-lg"
             >
-              {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {isExpanded ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -322,7 +351,9 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText className="h-6 w-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Your Analysis Report</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Your Analysis Report
+                </h3>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -408,26 +439,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           </Button>
         )}
       </div>
-
-      {/* Stats Card */}
-      {/* <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200/50 rounded-2xl">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-purple-900">{report.content.split(' ').length}</div>
-            <div className="text-sm text-purple-700">Words Analyzed</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-900">{report.content.split('\n').filter(line => line.trim().startsWith('##')).length}</div>
-            <div className="text-sm text-purple-700">Key Sections</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-900">
-              {report.content.split('\n').filter(line => line.trim().startsWith('- ')).length}
-            </div>
-            <div className="text-sm text-purple-700">Recommendations</div>
-          </div>
-        </div>
-      </Card> */}
     </div>
   );
 };

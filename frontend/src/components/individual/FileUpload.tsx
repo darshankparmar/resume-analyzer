@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from "react";
-import { Upload, File, X, FileText, CheckCircle, Eye } from "lucide-react";
+import { Upload, File, X, FileText, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PDFViewer } from "@/components/PDFViewer";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import type { UploadedFile } from "@/pages/Index";
+import type { UploadedFile } from "@/pages/Individual";
 
 interface FileUploadProps {
   onFileUpload: (file: UploadedFile) => void;
@@ -13,21 +13,25 @@ interface FileUploadProps {
   onRemove?: () => void;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFile, onRemove }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({
+  onFileUpload,
+  uploadedFile,
+  onRemove,
+}) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const validateFile = (file: File): boolean => {
-    if (file.type !== 'application/pdf') {
+    if (file.type !== "application/pdf") {
       toast({
         title: "❌ Invalid file type",
         description: "Please upload a PDF file only",
@@ -36,7 +40,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
       return false;
     }
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      // 10MB
       toast({
         title: "❌ File too large",
         description: "File size must be less than 10MB",
@@ -60,7 +65,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
     onFileUpload(uploadedFile);
   };
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDragOver(false);
 
@@ -70,15 +75,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
     }
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      setIsDragOver(true);
+    },
+    []
+  );
 
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
+  const handleDragLeave = useCallback(
+    (e: React.DragEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      setIsDragOver(false);
+    },
+    []
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -91,7 +102,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
     setShowPreview(false);
     // Notify parent to clear the uploaded file
     onRemove?.();
-    toast({ title: "Removed", description: "Resume cleared. Upload another file.", });
+    toast({
+      title: "Removed",
+      description: "Resume cleared. Upload another file.",
+    });
   };
 
   if (uploadedFile) {
@@ -104,18 +118,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
               <CheckCircle className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-green-900 truncate">{uploadedFile.name}</p>
-              <p className="text-sm text-green-700">{uploadedFile.size} • PDF</p>
+              <p className="font-semibold text-green-900 truncate">
+                {uploadedFile.name}
+              </p>
+              <p className="text-sm text-green-700">
+                {uploadedFile.size} • PDF
+              </p>
             </div>
             <div className="flex gap-2">
               {/* <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPreview(!showPreview)}
-                className="text-green-700 hover:bg-green-100 rounded-lg"
-              >
-                <Eye className="h-4 w-4" />
-              </Button> */}
+								variant="ghost"
+								size="sm"
+								onClick={() => setShowPreview(!showPreview)}
+								className="text-green-700 hover:bg-green-100 rounded-lg"
+							>
+								<Eye className="h-4 w-4" />
+							</Button> */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -152,9 +170,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        "relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer group",
+        "relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer group w-full",
         isDragOver
           ? "border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg transform scale-[1.02]"
           : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/30"
@@ -165,16 +184,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
     >
       <div className="flex flex-col items-center gap-6">
         {/* Upload Icon with Animation */}
-        <div className={cn(
-          "w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300",
-          isDragOver
-            ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl transform scale-110"
-            : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-indigo-100"
-        )}>
-          <Upload className={cn(
-            "h-10 w-10 transition-all duration-300",
-            isDragOver ? "text-white animate-bounce" : "text-gray-500 group-hover:text-blue-600"
-          )} />
+        <div
+          className={cn(
+            "w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300",
+            isDragOver
+              ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl transform scale-110"
+              : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-indigo-100"
+          )}
+        >
+          <Upload
+            className={cn(
+              "h-10 w-10 transition-all duration-300",
+              isDragOver
+                ? "text-white animate-bounce"
+                : "text-gray-500 group-hover:text-blue-600"
+            )}
+          />
         </div>
 
         <div className="space-y-3">
@@ -182,7 +207,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
             {isDragOver ? "Drop your resume here!" : "Upload your resume"}
           </h3>
           <p className="text-gray-600 max-w-sm">
-            Drag & drop your PDF resume here, or click the button below to browse files
+            Drag & drop your PDF resume here, or click the button below to
+            browse files
           </p>
           <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
             <FileText className="h-3 w-3" />
@@ -220,6 +246,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, uploadedFi
           </div>
         </div>
       )}
-    </div>
+    </button>
   );
 };
