@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, Form, UploadFile
-from typing import Optional
+from typing import Optional, cast
 
 from app.core.settings import MAX_FILE_SIZE_BYTES
 from app.utils.responses import error_response
@@ -102,13 +102,16 @@ async def analyze_resume(
     if err:
         return err
 
-    err = _validate_pdf_file(contents, resume.content_type)
+    # contents is guaranteed when err is None
+    contents_b: bytes = cast(bytes, contents)
+
+    err = _validate_pdf_file(contents_b, resume.content_type)
     if err:
         return err
 
-    extracted_text = extract_text_pypdf(contents)
+    extracted_text = extract_text_pypdf(contents_b)
     if not extracted_text:
-        ocr_text = extract_text_ocr_optional(contents)
+        ocr_text = extract_text_ocr_optional(contents_b)
         if ocr_text:
             extracted_text = ocr_text
     if not extracted_text:
@@ -122,20 +125,22 @@ async def analyze_resume(
     # JD pre-scrape is handled in legacy main; keep simple here (could be added via a service)
     try:
         try:
-            from agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
+            from agents.resume_agent_individual import AgentInputs, run_individual_analysis  # type: ignore
         except Exception:
-            from backend.agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
+            from backend.agents.resume_agent_individual import AgentInputs, run_individual_analysis  # type: ignore
+
+        # job_title validated earlier
+        job_title_req: str = cast(str, job_title)
 
         inputs = AgentInputs(
             resume_text=extracted_text,
-            job_title=job_title,
+            job_title=job_title_req,
             job_description_text=job_description,
             job_description_url=job_link,
             custom_instructions=None,
-            hr_questions=None,
         )
 
-        analysis_report_md = run_resume_analysis(inputs)
+        analysis_report_md = run_individual_analysis(inputs)
     except Exception:
         return error_response(
             code="ANALYSIS_FAILED",

@@ -115,9 +115,9 @@ async def analyze_resumes_batch(
 
         try:
             try:
-                from agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
+                from agents.resume_agent_recruiter import AgentInputs, run_recruiter_analysis  # type: ignore
             except Exception:
-                from backend.agents.resume_agent import AgentInputs, run_resume_analysis  # type: ignore
+                from backend.agents.resume_agent_recruiter import AgentInputs, run_recruiter_analysis  # type: ignore
 
             # Build JD and custom instructions
             jd_text_for_agent = batch_scraped_jd or job_description
@@ -146,7 +146,7 @@ async def analyze_resumes_batch(
                 hr_questions=hr_questions,
             )
 
-            analysis_report_md = run_resume_analysis(inputs)
+            analysis_report_md = run_recruiter_analysis(inputs)
 
             # Optional score parse
             score = None
