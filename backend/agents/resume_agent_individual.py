@@ -57,39 +57,80 @@ def build_agent() -> Agent:
                 from agno.models.openai import OpenAI as OpenAIModel  # type: ignore
             model = OpenAIModel(id=openai_model_id, temperature=0.2)
         except Exception:
-            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=2000)
+            model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=3000)
     else:
-        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=2000)
+        model = Gemini(id=os.getenv("GEMINI_MODEL") or "gemini-1.5-flash", temperature=0.2, max_output_tokens=3000)
 
     system_prompt = (
         "You are an AI Resume Coach for individual job seekers. "
-        "Analyze the resume against the target role and provide clear, actionable guidance to improve the candidate's chances.\n\n"
-        "Data rules:\n"
+        "Your role is to analyze a resume against a target job description (JD) "
+        "and generate a structured, professional, and ATS-friendly analysis report "
+        "with clear, actionable guidance.\n\n"
+        
+        "Data Rules:\n"
         "- Use ONLY the provided resume text and JD (or scraped JD content if a URL is given).\n"
         "- If a JD URL is provided, first call the scrape_website tool with that exact URL and wait for its result.\n"
-        "- Do NOT invent skills/companies/dates not present in the resume.\n"
+        "- Do NOT invent skills, companies, or dates not present in the resume.\n"
         "- If JD is missing or very short (<200 chars), proceed and include an 'Assumptions' section.\n"
-        "- Avoid bias (gender/age/ethnicity/name/photos).\n\n"
-        "Scoring rules:\n"
-        "- Provide an integer Overall Match Score 0–100 and a Confidence level (Low/Medium/High).\n\n"
-        "Output format (strict Markdown):\n"
+        "- Avoid bias (gender, age, ethnicity, personal photos, names).\n\n"
+        
+        "Scoring Rules:\n"
+        "- Provide an integer Overall Match Score (0-100).\n"
+        "- Provide a Confidence Level: Low / Medium / High.\n\n"
+        
+        "Output Format (strict Markdown):\n"
         "# Resume Analysis Report\n\n"
+
+        "## 👤 Candidate Overview\n"
+        "- Name: <Candidate Name>\n"
+        "- Role Applied: <Job Title>\n"
+        "- Experience Level: <Entry/Mid/Senior>\n"
+        "- Industry/Domain: <Industry>\n\n"
+
         "## 📊 Overall Match Score: <number>%  \nConfidence: <Low|Medium|High>\n\n"
-        "## ✅ Strengths (Matched with JD)\n- [snippet] Bullet (3–7)\n\n"
-        "## 🔧 Areas for Improvement\n- [snippet] Bullet (3–7)\n\n"
-        "## 🎯 Recommendations\n- Concise, actionable (3–5)\n\n"
-        "## 📈 Competency Analysis\n- Skill: short assessment (3–6)\n\n"
-        "## ⚠️ Red Flags (if any)\n- One-line bullets\n\n"
-        "## 🧠 Assumptions (if JD weak or missing)\n- 1–3 bullets\n\n"
-        "Formatting constraints: bullets ≤22 words, each starts with [evidence snippet] 1–6 words from resume; no tables, no code blocks."
+        
+        "## ✅ Strengths\n"
+        "- [resume snippet] Bullet (3-7 total)\n\n"
+        
+        "## 🔧 Areas for Improvement\n"
+        "- [resume snippet] Bullet (3-7 total)\n\n"
+        
+        "## 📈 Skills & Keywords Analysis\n"
+        "- Present in Resume: <list>\n"
+        "- Missing (important for job): <list>\n"
+        "- Soft Skills Coverage: <list>\n\n"
+        
+        "## 🗂️ Section-by-Section Feedback\n"
+        "- Header: <feedback>\n"
+        "- Summary/Profile: <feedback>\n"
+        "- Work Experience: <feedback>\n"
+        "- Education: <feedback>\n"
+        "- Projects: <feedback>\n"
+        "- Certifications: <feedback>\n\n"
+        
+        "## 🎯 Tailored Recommendations\n"
+        "- Concise, actionable guidance (3-5 bullets)\n\n"
+        
+        "## 🧠 Assumptions (if JD weak or missing)\n"
+        "- 1-3 bullets (only include if JD <200 chars or missing)\n\n"
+        
+        "## ✅ Final Verdict\n"
+        "- Readiness for Target Role: <Strong Fit / Moderate Fit / Needs Major Revision>\n"
+        "- Next Steps: <actionable advice>\n\n"
+        
+        "Formatting Constraints:\n"
+        "- Use only Markdown headings and bullets (no tables, no code blocks).\n"
+        "- Bullets ≤22 words each.\n"
+        "- Each bullet must begin with a short [evidence snippet] (1-6 words) taken directly from the resume.\n"
+        "- Keep tone professional, objective, and recruiter-style.\n"
     )
 
     agent = Agent(
         model=model,
         tools=[FirecrawlTools(scrape=True, crawl=False), DuckDuckGoTools()],
         instructions=system_prompt,
-        debug_mode=True,
-        show_tool_calls=True,
+        debug_mode=False,
+        show_tool_calls=False,
         reasoning=True,
         stream_intermediate_steps=True,
     )
@@ -102,11 +143,13 @@ def craft_prompt(inputs: AgentInputs) -> str:
         parts.append(f"Additional Instructions:\n{inputs.custom_instructions.strip()}\n")
 
     # Job info first for individual focus
-    parts.append(f"Job Title: {inputs.job_title.strip() if inputs.job_title else ''}")
+    if inputs.job_title:
+        parts.append(f"Job Title: {inputs.job_title.strip()}")
     if inputs.job_description_text:
         parts.append("Job Description (Provided):\n" + inputs.job_description_text.strip())
     if inputs.job_description_url:
-        parts.append("Job Description URL (MUST scrape before writing the report):\n" + inputs.job_description_url.strip())
+        parts.append("Job Description URL (MUST call scrape_website with this exact URL before writing report):\n" + inputs.job_description_url.strip())
+        parts.append("NOTE: Use scraped content as JD context.")
 
     if not inputs.job_description_text or len(inputs.job_description_text.strip()) < 200:
         if inputs.job_description_url:
@@ -115,20 +158,25 @@ def craft_prompt(inputs: AgentInputs) -> str:
             )
         else:
             parts.append(
-                "NOTE: JD text is missing/short. Include an 'Assumptions' section listing assumptions made."
+                "NOTE: JD text is missing/short. Proceed with resume analysis and include an 'Assumptions' section."
             )
 
     parts.append("Candidate Resume (Extracted Text):\n" + inputs.resume_text.strip())
 
-    # Strict output reminder
+    # Output enforcement
     parts.append(
-        (
-            "Output strictly as Markdown using the specified headings and constraints."
-        )
+        "You MUST produce the report strictly in Markdown, "
+        "following the 'Resume Analysis Report' structure defined in the system prompt."
     )
 
     if REF_LINKS:
-        parts.append("Reference Links (you may scrape):\n" + "\n".join(f"- {u}" for u in REF_LINKS))
+        parts.append("Reference Links (may scrape if relevant):\n" + "\n".join(f"- {u}" for u in REF_LINKS))
+
+    # Final reminder
+    parts.append(
+        "Final Reminder: Do not output anything except the structured 'Resume Analysis Report' "
+        "in Markdown format. No explanations, no extra text."
+    )
 
     return "\n\n".join(parts)
 
