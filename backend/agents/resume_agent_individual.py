@@ -127,11 +127,12 @@ def build_agent() -> Agent:
 
     agent = Agent(
         model=model,
-        tools=[FirecrawlTools(scrape=True, crawl=False), DuckDuckGoTools()],
+        tools=[FirecrawlTools(scrape=True, crawl=False), DuckDuckGoTools(news=False)],
         instructions=system_prompt,
         debug_mode=False,
         show_tool_calls=False,
         reasoning=True,
+        reasoning_max_steps=3,
         stream_intermediate_steps=True,
     )
     return agent
