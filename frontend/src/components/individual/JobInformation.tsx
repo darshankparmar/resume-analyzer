@@ -16,20 +16,181 @@ import {
 import { cn } from "@/lib/utils";
 import type { JobData } from "@/pages/Individual";
 
+type Mode = "report" | "optimized";
+
+const ModeSelectorBase: React.FC<{
+  mode: Mode;
+  onModeChange: (m: Mode) => void;
+}> = ({ mode, onModeChange }) => (
+  <Card className="p-4 bg-white/80 border-2 border-dashed border-gray-200 rounded-2xl">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="text-sm font-medium text-gray-700">Select Output</div>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onModeChange("report")}
+          className={cn(
+            "px-3 py-2 rounded-lg text-sm font-semibold border transition-all",
+            mode === "report"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+          )}
+        >
+          Report
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange("optimized")}
+          className={cn(
+            "px-3 py-2 rounded-lg text-sm font-semibold border transition-all",
+            mode === "optimized"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+          )}
+        >
+          Optimized Resume
+        </button>
+      </div>
+    </div>
+  </Card>
+);
+
+const GenerateSectionBase: React.FC<{
+  isReady: boolean;
+  canAnalyze: boolean;
+  isAnalyzing: boolean;
+  mode: Mode;
+  jobTitlePresent: boolean;
+  hasDescription: boolean;
+  onAnalyze: () => void;
+}> = ({
+  isReady,
+  canAnalyze,
+  isAnalyzing,
+  mode,
+  jobTitlePresent,
+  hasDescription,
+  onAnalyze,
+}) => (
+  <Card
+    className={cn(
+      "p-6 transition-all duration-500 rounded-2xl border-0 overflow-hidden relative",
+      isReady
+        ? "bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 shadow-2xl transform hover:scale-[1.02]"
+        : "bg-gradient-to-r from-gray-200 to-gray-300"
+    )}
+  >
+    {isReady && (
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+    )}
+    <div className="relative z-10">
+      <Button
+        onClick={onAnalyze}
+        disabled={!canAnalyze || isAnalyzing}
+        size="lg"
+        className={cn(
+          "w-full text-lg font-bold rounded-xl border-0 h-16 transition-all duration-300 relative overflow-hidden",
+          isReady
+            ? "bg-white text-blue-600 hover:bg-gray-50 shadow-lg hover:shadow-xl"
+            : "bg-white/50 text-gray-500 cursor-not-allowed"
+        )}
+      >
+        {isAnalyzing ? (
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span>
+              {mode === "optimized"
+                ? "Generating optimized resume..."
+                : "Analyzing your resume..."}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Sparkles
+              className={cn(
+                "h-6 w-6 transition-all duration-300",
+                isReady && "animate-pulse"
+              )}
+            />
+            <span>Generate</span>
+          </div>
+        )}
+      </Button>
+
+      <div className="mt-4">
+        {!canAnalyze && (
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-600 mb-2">
+              {!jobTitlePresent
+                ? "👆 Enter a job title to begin"
+                : "📄 Upload your resume to continue"}
+            </p>
+            <div className="flex justify-center gap-2">
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full transition-colors duration-300",
+                  jobTitlePresent ? "bg-green-500" : "bg-gray-300"
+                )}
+              />
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full transition-colors duration-300",
+                  canAnalyze ? "bg-green-500" : "bg-gray-300"
+                )}
+              />
+            </div>
+          </div>
+        )}
+        {canAnalyze && isReady && !isAnalyzing && (
+          <div className="text-center">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <p className="text-sm font-medium text-white mb-1">
+                ✨ Ready to generate your{" "}
+                {mode === "optimized"
+                  ? "optimized resume"
+                  : "personalized analysis"}
+              </p>
+              <p className="text-xs text-white/80">
+                {hasDescription
+                  ? "Using job description for detailed matching"
+                  : "Basic analysis mode"}
+              </p>
+            </div>
+          </div>
+        )}
+        {isAnalyzing && (
+          <div className="text-center">
+            <div className="p-3 bg-blue-100/80 rounded-xl">
+              <p className="text-sm font-medium text-blue-900">
+                🤖 AI is analyzing your resume against job requirements...
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </Card>
+);
+
 interface JobInformationProps {
   jobData: JobData;
   onJobDataChange: (data: JobData) => void;
   onAnalyze: () => void;
   isAnalyzing: boolean;
   canAnalyze: boolean;
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
 }
 
+// NOSONAR: UI rendering combines several conditional sections; acceptable complexity for component ergonomics.
 export const JobInformation: React.FC<JobInformationProps> = ({
   jobData,
   onJobDataChange,
   onAnalyze,
   isAnalyzing,
   canAnalyze,
+  mode,
+  onModeChange,
 }) => {
   const [showOptional, setShowOptional] = useState(false);
   const DESCRIPTION_MAX = 3000;
@@ -205,101 +366,18 @@ export const JobInformation: React.FC<JobInformationProps> = ({
         )}
       </div>
 
-      {/* Analysis Button - Prominent */}
-      <Card
-        className={cn(
-          "p-6 transition-all duration-500 rounded-2xl border-0 overflow-hidden relative",
-          isReadyToAnalyze
-            ? "bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 shadow-2xl transform hover:scale-[1.02]"
-            : "bg-gradient-to-r from-gray-200 to-gray-300"
-        )}
-      >
-        {/* Background Animation */}
-        {isReadyToAnalyze && (
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
-        )}
-
-        <div className="relative z-10">
-          <Button
-            onClick={onAnalyze}
-            disabled={!canAnalyze || isAnalyzing}
-            size="lg"
-            className={cn(
-              "w-full text-lg font-bold rounded-xl border-0 h-16 transition-all duration-300 relative overflow-hidden",
-              isReadyToAnalyze
-                ? "bg-white text-blue-600 hover:bg-gray-50 shadow-lg hover:shadow-xl"
-                : "bg-white/50 text-gray-500 cursor-not-allowed"
-            )}
-          >
-            {isAnalyzing ? (
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span>Analyzing your resume...</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Sparkles
-                  className={cn(
-                    "h-6 w-6 transition-all duration-300",
-                    isReadyToAnalyze && "animate-pulse"
-                  )}
-                />
-                <span>Generate Analysis Report</span>
-              </div>
-            )}
-          </Button>
-
-          {/* Status Messages */}
-          <div className="mt-4">
-            {!canAnalyze && (
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-600 mb-2">
-                  {!jobData.title
-                    ? "👆 Enter a job title to begin"
-                    : "📄 Upload your resume to continue"}
-                </p>
-                <div className="flex justify-center gap-2">
-                  <div
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-colors duration-300",
-                      jobData.title ? "bg-green-500" : "bg-gray-300"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-colors duration-300",
-                      canAnalyze ? "bg-green-500" : "bg-gray-300"
-                    )}
-                  />
-                </div>
-              </div>
-            )}
-            {canAnalyze && isReadyToAnalyze && !isAnalyzing && (
-              <div className="text-center">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <p className="text-sm font-medium text-white mb-1">
-                    ✨ Ready to generate your personalized analysis
-                  </p>
-                  <p className="text-xs text-white/80">
-                    {jobData.description
-                      ? "Using job description for detailed matching"
-                      : "Basic analysis mode"}
-                  </p>
-                </div>
-              </div>
-            )}
-            {isAnalyzing && (
-              <div className="text-center">
-                <div className="p-3 bg-blue-100/80 rounded-xl">
-                  <p className="text-sm font-medium text-blue-900">
-                    🤖 AI is analyzing your resume against job requirements...
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
+      <div className="space-y-4">
+        <ModeSelectorBase mode={mode} onModeChange={onModeChange} />
+        <GenerateSectionBase
+          isReady={isReadyToAnalyze}
+          canAnalyze={canAnalyze}
+          isAnalyzing={isAnalyzing}
+          mode={mode}
+          jobTitlePresent={!!jobData.title}
+          hasDescription={!!jobData.description}
+          onAnalyze={onAnalyze}
+        />
+      </div>
 
       {/* Tips Card - Shows when optional fields are visible */}
       {showOptional && (

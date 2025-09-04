@@ -1,0 +1,290 @@
+{
+  "basics": {
+    "name": "A B",
+    "headline": "Web Dev",
+    "email": "a@b.co",
+    "phone": "1",
+    "location": "X",
+    "url": { "label": "", "href": "https://a.co" },
+    "customFields": [],
+    "picture": {
+      "url": "https://a.co/p",
+      "size": 1,
+      "aspectRatio": 1,
+      "borderRadius": 0,
+      "effects": { "hidden": false, "border": false, "grayscale": false }
+    }
+  },
+  "sections": {
+    "summary": {
+      "name": "Summary",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "summary",
+      "content": "<p>x</p>"
+    },
+    "awards": {
+      "name": "Awards",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "awards",
+      "items": []
+    },
+    "certifications": {
+      "name": "Certifications",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "certifications",
+      "items": [
+        {
+          "id": "1",
+          "visible": true,
+          "name": "C1",
+          "issuer": "O1",
+          "date": "1",
+          "summary": "",
+          "url": { "label": "", "href": "" }
+        },
+        {
+          "id": "2",
+          "visible": true,
+          "name": "C2",
+          "issuer": "O2",
+          "date": "1",
+          "summary": "",
+          "url": { "label": "", "href": "" }
+        }
+      ]
+    },
+    "education": {
+      "name": "Education",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "education",
+      "items": [
+        {
+          "id": "3",
+          "visible": true,
+          "institution": "U",
+          "studyType": "B",
+          "area": "X",
+          "score": "",
+          "date": "1",
+          "summary": "",
+          "url": { "label": "", "href": "" }
+        }
+      ]
+    },
+    "experience": {
+      "name": "Experience",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "experience",
+      "items": [
+        {
+          "id": "4",
+          "visible": true,
+          "company": "C1",
+          "position": "Dev",
+          "location": "X",
+          "date": "1-",
+          "summary": "<ul><li>x</li></ul>",
+          "url": { "label": "", "href": "https://a.co" }
+        },
+        {
+          "id": "5",
+          "visible": true,
+          "company": "C2",
+          "position": "Dev",
+          "location": "X",
+          "date": "1-1",
+          "summary": "<ul><li>x</li></ul>",
+          "url": { "label": "", "href": "https://b.co" }
+        }
+      ]
+    },
+    "volunteer": {
+      "name": "Volunteering",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "volunteer",
+      "items": []
+    },
+    "interests": {
+      "name": "Interests",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "interests",
+      "items": []
+    },
+    "languages": {
+      "name": "Languages",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "languages",
+      "items": []
+    },
+    "profiles": {
+      "name": "Profiles",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "profiles",
+      "items": [
+        {
+          "id": "6",
+          "visible": true,
+          "network": "LinkedIn",
+          "username": "u",
+          "icon": "linkedin",
+          "url": { "label": "", "href": "https://a.co/l" }
+        },
+        {
+          "id": "7",
+          "visible": true,
+          "network": "GitHub",
+          "username": "u",
+          "icon": "github",
+          "url": { "label": "", "href": "https://a.co/g" }
+        }
+      ]
+    },
+    "projects": {
+      "name": "Projects",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "projects",
+      "items": [
+        {
+          "id": "8",
+          "visible": true,
+          "name": "P1",
+          "description": "D1",
+          "date": "",
+          "summary": "<p>x</p>",
+          "keywords": [],
+          "url": { "label": "", "href": "" }
+        },
+        {
+          "id": "9",
+          "visible": true,
+          "name": "P2",
+          "description": "D2",
+          "date": "",
+          "summary": "<p>x</p>",
+          "keywords": [],
+          "url": { "label": "", "href": "" }
+        }
+      ]
+    },
+    "publications": {
+      "name": "Publications",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "publications",
+      "items": []
+    },
+    "references": {
+      "name": "References",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": false,
+      "id": "references",
+      "items": [
+        {
+          "id": "10",
+          "visible": true,
+          "name": "OnReq",
+          "description": "",
+          "summary": "",
+          "url": { "label": "", "href": "" }
+        }
+      ]
+    },
+    "skills": {
+      "name": "Skills",
+      "columns": 1,
+      "separateLinks": true,
+      "visible": true,
+      "id": "skills",
+      "items": [
+        {
+          "id": "11",
+          "visible": true,
+          "name": "Tech",
+          "description": "Adv",
+          "level": 0,
+          "keywords": ["x", "y"]
+        },
+        {
+          "id": "12",
+          "visible": true,
+          "name": "FW",
+          "description": "Mid",
+          "level": 0,
+          "keywords": ["r", "a"]
+        },
+        {
+          "id": "13",
+          "visible": true,
+          "name": "Tools",
+          "description": "Mid",
+          "level": 0,
+          "keywords": ["g", "d"]
+        }
+      ]
+    },
+    "custom": {}
+  },
+  "metadata": {
+    "template": "glalie",
+    "layout": [
+      [
+        ["summary", "experience", "education", "projects", "references"],
+        [
+          "profiles",
+          "skills",
+          "certifications",
+          "interests",
+          "languages",
+          "awards",
+          "volunteer",
+          "publications"
+        ]
+      ]
+    ],
+    "css": { "value": "", "visible": false },
+    "page": {
+      "margin": 14,
+      "format": "a4",
+      "options": { "breakLine": true, "pageNumbers": true }
+    },
+    "theme": {
+      "background": "#ffffff",
+      "text": "#000000",
+      "primary": "#ca8a04"
+    },
+    "typography": {
+      "font": {
+        "family": "Merriweather",
+        "subset": "latin",
+        "variants": ["regular"],
+        "size": 13
+      },
+      "lineHeight": 1.75,
+      "hideIcons": false,
+      "underlineLinks": true
+    },
+    "notes": ""
+  }
+}

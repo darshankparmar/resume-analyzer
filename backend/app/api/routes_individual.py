@@ -84,12 +84,22 @@ async def analyze_resume(
     job_description_camel: Optional[str] = Form(None, alias="jobDescription"),
     job_description_snake: Optional[str] = Form(None, alias="job_description"),
     job_link_camel: Optional[str] = Form(None, alias="jobLink"),
-    job_link_snake: Optional[str] = Form(None, alias="job_link")
+    job_link_snake: Optional[str] = Form(None, alias="job_link"),
+    generate_json_camel: Optional[str] = Form(None, alias="generateResumeJson"),
+    generate_json_snake: Optional[str] = Form(None, alias="generate_resume_json"),
 ):
     # Normalize
     job_title: Optional[str] = job_title_camel or job_title_snake
     job_description: Optional[str] = job_description_camel or job_description_snake
     job_link: Optional[str] = job_link_camel or job_link_snake
+    
+    def _to_bool(v: Optional[str]) -> bool:
+        if v is None:
+            return False
+        val = str(v).strip().lower()
+        return val in {"1", "true", "yes", "y", "on"}
+
+    generate_json: bool = _to_bool(generate_json_camel) or _to_bool(generate_json_snake)
 
     err = _validate_required(job_title, resume)
     if err:
@@ -122,35 +132,67 @@ async def analyze_resume(
             status_code=422,
         )
 
-    # JD pre-scrape is handled in legacy main; keep simple here (could be added via a service)
-    try:
+    if generate_json:
         try:
-            from agents.resume_agent_individual import AgentInputs, run_individual_analysis  # type: ignore
+            try:
+                from agents.resume_agent_optimizer import AgentInputs, run_resume_optimization  # type: ignore
+            except Exception as e:
+                from backend.agents.resume_agent_optimizer import AgentInputs, run_resume_optimization  # type: ignore
+
+            job_title_req: str = cast(str, job_title)
+
+            inputs = AgentInputs(
+                resume_text=extracted_text,
+                job_title=job_title_req,
+                job_description_text=job_description,
+                job_description_url=job_link,
+                custom_instructions=None,
+            )
+
+            resume_json = run_resume_optimization(inputs)
         except Exception:
-            from backend.agents.resume_agent_individual import AgentInputs, run_individual_analysis  # type: ignore
+            return error_response(
+                code="RESUME_GEN_FAILED",
+                message="Failed to generate resume",
+                details={"reason": "AI service unavailable", "retryAfter": "30s"},
+                status_code=502,
+            )
 
-        # job_title validated earlier
-        job_title_req: str = cast(str, job_title)
+        return {
+            "success": True,
+            "data": {"optimizedResumeJson": resume_json},
+            "message": "Resume generated successfully",
+        }
+    else:
+        # JD pre-scrape is handled in legacy main; keep simple here (could be added via a service)
+        try:
+            try:
+                from agents.resume_agent_individual import AgentInputs, run_individual_analysis  # type: ignore
+            except Exception:
+                from backend.agents.resume_agent_individual import AgentInputs, run_individual_analysis  # type: ignore
 
-        inputs = AgentInputs(
-            resume_text=extracted_text,
-            job_title=job_title_req,
-            job_description_text=job_description,
-            job_description_url=job_link,
-            custom_instructions=None,
-        )
+            # job_title validated earlier
+            job_title_req: str = cast(str, job_title)
 
-        analysis_report_md = run_individual_analysis(inputs)
-    except Exception:
-        return error_response(
-            code="ANALYSIS_FAILED",
-            message="Failed to analyze resume content",
-            details={"reason": "AI service unavailable", "retryAfter": "30s"},
-            status_code=502,
-        )
+            inputs = AgentInputs(
+                resume_text=extracted_text,
+                job_title=job_title_req,
+                job_description_text=job_description,
+                job_description_url=job_link,
+                custom_instructions=None,
+            )
 
-    return {
-        "success": True,
-        "data": {"analysisReport": analysis_report_md},
-        "message": "Analysis completed successfully",
-    }
+            analysis_report_md = run_individual_analysis(inputs)
+        except Exception:
+            return error_response(
+                code="ANALYSIS_FAILED",
+                message="Failed to analyze resume content",
+                details={"reason": "AI service unavailable", "retryAfter": "30s"},
+                status_code=502,
+            )
+
+        return {
+            "success": True,
+            "data": {"analysisReport": analysis_report_md},
+            "message": "Analysis completed successfully",
+        }

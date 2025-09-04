@@ -6,6 +6,7 @@ import { AnalysisResults } from "../components/individual/AnalysisResults";
 import { Card } from "@/components/ui/card";
 import { FileText, Briefcase, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export interface UploadedFile {
   file: File;
@@ -41,7 +42,10 @@ const Individual = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const API_BASE = import.meta.env?.VITE_API_BASE_URL || "";
+  type Mode = "report" | "optimized";
+  const [mode, setMode] = useState<Mode>("report");
 
   // Auto-advance from 1 -> 2 only (stop auto-advance 2 -> 3; user will proceed manually)
   useEffect(() => {
@@ -95,7 +99,12 @@ const Individual = () => {
 
       const res = await fetch(`${API_BASE}/api/v1/analyze-resume`, {
         method: "POST",
-        body: formData,
+        body: (() => {
+          if (mode === "optimized") {
+            formData.append("generateResumeJson", "true");
+          }
+          return formData;
+        })(),
       });
 
       const isJson = res.headers
@@ -114,25 +123,43 @@ const Individual = () => {
         return;
       }
 
-      const reportContent: string | undefined = payload?.data?.analysisReport;
-      if (!reportContent) {
-        toast({
-          title: "Analysis failed",
-          description: "Invalid response from server",
-          variant: "destructive",
+      if (mode === "optimized") {
+        const jsonText: string | undefined = payload?.data?.optimizedResumeJson;
+        if (!jsonText) {
+          toast({
+            title: "Generation failed",
+            description: "Invalid response from server",
+            variant: "destructive",
+          });
+          return;
+        }
+        navigate("/optimized", {
+          state: {
+            optimizedJson: jsonText,
+            jobTitle: jobData.title,
+            timestamp: new Date().toISOString(),
+          },
         });
-        return;
+      } else {
+        const reportContent: string | undefined = payload?.data?.analysisReport;
+        if (!reportContent) {
+          toast({
+            title: "Analysis failed",
+            description: "Invalid response from server",
+            variant: "destructive",
+          });
+          return;
+        }
+        setAnalysisReport({
+          content: reportContent,
+          timestamp: new Date().toISOString(),
+        });
+        setCurrentStep(4);
+        toast({
+          title: "✨ Analysis complete!",
+          description: "Your personalized report is ready",
+        });
       }
-
-      setAnalysisReport({
-        content: reportContent,
-        timestamp: new Date().toISOString(),
-      });
-      setCurrentStep(4);
-      toast({
-        title: "✨ Analysis complete!",
-        description: "Your personalized report is ready",
-      });
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Please try again later";
@@ -260,6 +287,8 @@ const Individual = () => {
                   onAnalyze={handleAnalyze}
                   isAnalyzing={isAnalyzing}
                   canAnalyze={!!uploadedFile && !!jobData.title}
+                  mode={mode}
+                  onModeChange={setMode}
                 />
               </Card>
             </div>

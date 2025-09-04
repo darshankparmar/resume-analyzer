@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
 import Individual from "./pages/Individual";
+import OptimizedResumePage from "./pages/OptimizedResume";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/Footer";
 import HRBatchPage from "./pages/HRBatchPage";
@@ -23,6 +24,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/individual" element={<Individual />} />
+              <Route path="/optimized" element={<OptimizedResumePage />} />
               <Route path="/hr" element={<HRBatchPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
