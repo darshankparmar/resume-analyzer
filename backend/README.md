@@ -67,19 +67,26 @@ Provider is selected via environment variables. Example (Windows cmd):
 
 ```cmd
 REM Choose provider: gemini (default) or openai
-setx AI_PROVIDER=gemini
+set AI_PROVIDER=gemini
 
 REM For Gemini
-setx GOOGLE_API_KEY=your_gemini_api_key
-setx GEMINI_MODEL=gemini-1.5-flash
+set GOOGLE_API_KEY=your_gemini_api_key
+set GEMINI_MODEL=gemini-1.5-flash
 
 REM For OpenAI (optional)
-setx OPENAI_API_KEY=your_openai_api_key
-setx OPENAI_MODEL=gpt-5-mini
+set OPENAI_API_KEY=your_openai_api_key
+set OPENAI_MODEL=gpt-5-mini
 
 REM For Firecrawl
-setx FIRECRAWL_API_KEY=your_firecrawl_api_key
+set FIRECRAWL_API_KEY=your_firecrawl_api_key
 
 REM For Allowed Origins
-setx ALLOWED_ORIGINS=http://localhost:8080
+set ALLOWED_ORIGINS=http://localhost:8080
+
+REM For google sign in
+set GOOGLE_CLIENT_ID=xyz.apps.googleusercontent.com
+
+REM For firebase database
+set GOOGLE_APPLICATION_CREDENTIALS=D:\secure\firebase\service-account.json
+set FIREBASE_PROJECT_ID=<your-firebase-project-id>
 ```
