@@ -79,7 +79,9 @@ def build_optimizer_agent() -> Agent:
         "- STRICTLY output JSON only, matching the rxresu.me schema structure shown below.\n"
         "- Do NOT output any explanations, markdown, or text outside JSON.\n"
         "- Always preserve schema keys and nesting.\n"
-        "- Fill in values with optimized, ATS-friendly, keyword-rich content aligned with JD.\n\n"
+        "- Fill in values with optimized, ATS-friendly, keyword-rich content aligned with JD.\n"
+        "- You can add fake skills, experiences, projects, and other professional details, "
+        "but NEVER alter or generate fake personal information (name, email, phone, address).\n\n"
 
         "Schema Example (for structure ONLY, values will change):\n"
         f"{schema_template}\n"
