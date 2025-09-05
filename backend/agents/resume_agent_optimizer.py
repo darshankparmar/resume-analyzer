@@ -52,17 +52,17 @@ def build_optimizer_agent() -> Agent:
                 from agno.models.openai import OpenAIChat as OpenAIModel  # type: ignore
             except Exception:
                 from agno.models.openai import OpenAI as OpenAIModel  # type: ignore
-            model = OpenAIModel(id=openai_model_id, temperature=0.4)
+            model = OpenAIModel(id=openai_model_id, temperature=0.2)
         except Exception:
             model = Gemini(
                 id=os.getenv("GEMINI_MODEL") or "gemini-1.5-pro",
-                temperature=0.4,
+                temperature=0.2,
                 max_output_tokens=5000,
             )
     else:
         model = Gemini(
             id=os.getenv("GEMINI_MODEL") or "gemini-1.5-pro",
-            temperature=0.4,
+            temperature=0.2,
             max_output_tokens=5000,
         )
 
@@ -127,23 +127,34 @@ def craft_optimizer_prompt(inputs: AgentInputs) -> str:
 def run_resume_optimization(inputs: AgentInputs, agent: Optional[Agent] = None) -> str:
     agent = agent or build_optimizer_agent()
     prompt = craft_optimizer_prompt(inputs)
-    result: RunResponse = agent.run(prompt, format="json")
-    try:
-        pprint_run_response(result, markdown=True)
-    except Exception:
-        pass
-    text = result.content.strip() if result and result.content else "{}"
 
-    # Remove markdown code fences if present
-    if text.startswith("```"):
-        # Remove ```json or ``` and ending ```
-        text = re.sub(r"^```(?:json)?\n?", "", text)
-        text = re.sub(r"\n?```$", "", text)
+    for attempt in range(2):  # Try max 2 times (1 retry)
+        result: RunResponse = agent.run(prompt, format="json")
+        try:
+            pprint_run_response(result, markdown=True)
+        except Exception:
+            pass
 
-    # Ensure JSON validity
-    try:
-        json.loads(text)
-    except Exception:
-        raise ValueError("Model did not return valid JSON output")
+        text = result.content.strip() if result and result.content else "{}"
 
-    return text
+        # Remove markdown code fences if present
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\n?", "", text)
+            text = re.sub(r"\n?```$", "", text)
+
+        # Ensure JSON validity
+        try:
+            parsed = json.loads(text)
+        except Exception:
+            raise ValueError("Model did not return valid JSON output")
+
+        # If not empty, return
+        if parsed and isinstance(parsed, dict) and len(parsed) > 0:
+            return text
+
+        # Otherwise retry
+        if attempt == 0:
+            print("⚠️ Empty JSON received, retrying once...")
+
+    # If still empty after retry
+    raise ValueError("Model returned empty JSON after retry")
