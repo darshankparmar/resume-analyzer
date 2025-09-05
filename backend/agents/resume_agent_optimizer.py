@@ -34,6 +34,28 @@ def _load_rxresume_schema_template() -> Optional[str]:
         return None
 
 
+def _normalize_urls_recursive(obj: object) -> object:
+    """
+    Ensure all url.href strings are absolute (prefix https:// if missing).
+    Walks through dicts/lists recursively.
+    """
+    if isinstance(obj, dict):
+        obj = obj.copy()
+        for k, v in obj.items():
+            if k == "url" and isinstance(v, dict):
+                href = v.get("href")
+                if isinstance(href, str) and href.strip():
+                    if not (href.startswith("http://") or href.startswith("https://")):
+                        obj[k] = {**v, "href": f"https://{href}"}
+            else:
+                obj[k] = _normalize_urls_recursive(v)
+        return obj
+    elif isinstance(obj, list):
+        return [_normalize_urls_recursive(x) for x in obj]
+    else:
+        return obj
+
+
 @dataclass
 class AgentInputs:
     resume_text: str
@@ -147,6 +169,9 @@ def run_resume_optimization(inputs: AgentInputs, agent: Optional[Agent] = None) 
             parsed = json.loads(text)
         except Exception:
             raise ValueError("Model did not return valid JSON output")
+
+        # Normalize URLs
+        parsed = _normalize_urls_recursive(parsed)
 
         # If not empty, return
         if parsed and isinstance(parsed, dict) and len(parsed) > 0:
