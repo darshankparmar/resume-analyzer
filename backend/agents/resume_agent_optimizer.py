@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 import os
 import json
+import re
 
 try:
     from agno.agent import Agent, RunResponse
@@ -89,7 +90,7 @@ def build_optimizer_agent() -> Agent:
         tools=[FirecrawlTools(scrape=True, crawl=False), DuckDuckGoTools(news=False)],
         instructions=system_prompt,
         debug_mode=False,
-        show_tool_calls=True,
+        show_tool_calls=False,
         reasoning=True,
         stream_intermediate_steps=True,
         reasoning_max_steps=3,
@@ -130,6 +131,12 @@ def run_resume_optimization(inputs: AgentInputs, agent: Optional[Agent] = None) 
     except Exception:
         pass
     text = result.content.strip() if result and result.content else "{}"
+
+    # Remove markdown code fences if present
+    if text.startswith("```"):
+        # Remove ```json or ``` and ending ```
+        text = re.sub(r"^```(?:json)?\n?", "", text)
+        text = re.sub(r"\n?```$", "", text)
 
     # Ensure JSON validity
     try:

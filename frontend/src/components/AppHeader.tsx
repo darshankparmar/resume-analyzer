@@ -1,44 +1,124 @@
 import { FileText, Menu } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import React from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AppHeader() {
-    const [open, setOpen] = React.useState(false);
-    return (
-        <header className="sticky top-0 z-40 backdrop-blur-lg bg-white/80 border-b border-gray-200/50">
-            <div className="container mx-auto px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link to="/" className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                            <FileText className="h-6 w-6 text-white" />
-                        </Link>
-                        <div>
-                            <Link to="/" className="block text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                                Resume Analyzer
-                            </Link>
-                            <p className="text-sm text-gray-600 hidden sm:block">AI-powered resume optimization</p>
-                        </div>
-                    </div>
-                    {/* Desktop nav */}
-                    <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                        <NavLink to="/individual" className={({ isActive }) => `transition-colors hover:text-slate-900 ${isActive ? "text-slate-900" : "text-slate-600"}`}>Individual</NavLink>
-                        <NavLink to="/hr" className={({ isActive }) => `transition-colors hover:text-slate-900 ${isActive ? "text-slate-900" : "text-slate-600"}`}>HR Portal</NavLink>
-                    </nav>
+  const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated, signOut } = useAuth();
 
-                    {/* Mobile menu button */}
-                    <button className="md:hidden inline-flex items-center justify-center rounded-lg border px-3 py-2 text-slate-700" onClick={() => setOpen(!open)} aria-label="Toggle navigation">
-                        <Menu className="h-5 w-5" />
-                    </button>
-                </div>
-                {/* Mobile nav */}
-                {open && (
-                    <div className="md:hidden mt-3 grid gap-2 rounded-xl border bg-white p-3">
-                        <NavLink to="/individual" onClick={() => setOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-2 ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-50"}`}>Individual</NavLink>
-                        <NavLink to="/hr" onClick={() => setOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-2 ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-50"}`}>HR Portal</NavLink>
-                        {/* add auth later */}
-                    </div>
-                )}
+  const handleLogout = () => {
+    signOut();
+    navigate("/");
+  };
+  return (
+    <header className="sticky top-0 z-40 backdrop-blur-lg bg-white/80 border-b border-gray-200/50">
+      <div className="container mx-auto px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <FileText className="h-6 w-6 text-white" />
+            </Link>
+            <div>
+              <Link
+                to="/"
+                className="block text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+              >
+                Resume Analyzer
+              </Link>
+              <p className="text-sm text-gray-600 hidden sm:block">
+                AI-powered resume optimization
+              </p>
             </div>
-        </header>
-    );
+          </div>
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+            <NavLink
+              to="/individual"
+              className={({ isActive }) =>
+                `transition-colors hover:text-slate-900 ${
+                  isActive ? "text-slate-900" : "text-slate-600"
+                }`
+              }
+            >
+              Individual
+            </NavLink>
+            <NavLink
+              to="/hr"
+              className={({ isActive }) =>
+                `transition-colors hover:text-slate-900 ${
+                  isActive ? "text-slate-900" : "text-slate-600"
+                }`
+              }
+            >
+              HR Portal
+            </NavLink>
+            {isAuthenticated && (
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center rounded-lg border px-3 py-2 text-slate-700 hover:bg-slate-50"
+              >
+                Log out
+              </button>
+            )}
+          </nav>
+
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden inline-flex items-center justify-center rounded-lg border px-3 py-2 text-slate-700"
+            onClick={() => setOpen(!open)}
+            aria-label="Toggle navigation"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
+        {/* Mobile nav */}
+        {open && (
+          <div className="md:hidden mt-3 grid gap-2 rounded-xl border bg-white p-3">
+            <NavLink
+              to="/individual"
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                `rounded-lg px-3 py-2 ${
+                  isActive
+                    ? "bg-slate-100 text-slate-900"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`
+              }
+            >
+              Individual
+            </NavLink>
+            <NavLink
+              to="/hr"
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                `rounded-lg px-3 py-2 ${
+                  isActive
+                    ? "bg-slate-100 text-slate-900"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`
+              }
+            >
+              HR Portal
+            </NavLink>
+            {isAuthenticated && (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="rounded-lg px-3 py-2 text-left text-slate-700 hover:bg-slate-50 border"
+              >
+                Log out
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
+  );
 }

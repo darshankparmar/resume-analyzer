@@ -222,7 +222,7 @@
           "id": "11",
           "visible": true,
           "name": "Tech",
-          "description": "Adv",
+          "description": "",
           "level": 0,
           "keywords": ["x", "y"]
         },
@@ -230,7 +230,7 @@
           "id": "12",
           "visible": true,
           "name": "FW",
-          "description": "Mid",
+          "description": "",
           "level": 0,
           "keywords": ["r", "a"]
         },
@@ -238,7 +238,7 @@
           "id": "13",
           "visible": true,
           "name": "Tools",
-          "description": "Mid",
+          "description": "",
           "level": 0,
           "keywords": ["g", "d"]
         }
